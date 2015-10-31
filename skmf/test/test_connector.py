@@ -1,11 +1,10 @@
 import unittest
-from skmf.views import View
+from skmf import views
 
 class SemanticKmfTest(unittest.TestCase):
 
     def test_view_landing_page(self):
-        view = View()
-        result = view.index()
+        result = views.index()
         self.assertEqual(result, 'Hello, World!')
 
 
