@@ -1,11 +1,34 @@
+"""skmf.test_flask by Armin Ronacher
+(Modified by Brendan Sweeney, CSS 593, 2015.)
+
+Provide a set of test cases to verify the correct behavior of the user-facing
+portions of the program that are handled by Flask. Currently, this is taken
+from the Flaskr tutorial and will need to be modified as the frontend of the
+system is developed.
+
+Classes:
+FlaskTestCase -- Unit tests to verify correct behavior of Flask views.
+"""
+
 import os
-#import run
-import skmf
 import unittest
 import tempfile
 
+import skmf
 
-class FlaskrTestCase(unittest.TestCase):
+
+class FlaskTestCase(unittest.TestCase):
+    """Unit tests to verify the correct behavior of Flask views and databases.
+
+    Methods:
+    login -- Return the login status view after attempting to login a user.
+    logout -- Return the logout status view after logging out a user.
+    setUp -- Establish a database connection and switch on testing mode.
+    tearDown -- Close the database and its associated file.
+    test_empty_db -- Identify if the database seems not to be empty.
+    test_login_logout -- Identify if login does not work properly.
+    test_message -- Identify if messages are not filtered as expected.
+    """
 
     def login(self, username, password):
         return self.app.post('/login', data=dict(
@@ -50,6 +73,15 @@ class FlaskrTestCase(unittest.TestCase):
         self.assertIn('&lt;Hello&gt;', rv.data.decode('utf-8'))
         self.assertIn('<strong>HTML</strong> allowed here',
                       rv.data.decode('utf-8'))
+
+    #def test_html_header(self):
+    #    header = '<!doctype html>'
+    #    result = views.show_entries()
+    #    self.assertIn(header, result)
+
+    #def test_view_landing_page(self):
+    #    result = views.index()
+    #    self.assertEqual(result, 'Index Page')
 
     #with skmf.app.test_request_context('/?name=Peter'):
     #    self.assertEqual(flask.request.path, '/')

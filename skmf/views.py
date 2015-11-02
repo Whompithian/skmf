@@ -1,3 +1,10 @@
+"""skmf.views by Armin Ronacher
+(Modified by Brendan Sweeney, CSS 593, 2015.)
+
+Currently, this is taken from the Flaskr tutorial and will need to be modified
+as the frontend of the system is developed.
+"""
+
 from flask import render_template, request, session, redirect, url_for, \
                   abort, flash
 from skmf import app, g

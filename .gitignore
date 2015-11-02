@@ -1,2 +1,4 @@
+*.e4p
+*.eric5project
 *.pyc
 flask
