@@ -9,6 +9,7 @@ from flask import render_template, request, session, redirect, url_for, \
                   abort, flash
 
 from skmf import app, g
+from skmf.sparqler import sparql_query, sparql_update
 
 
 @app.route('/')
@@ -25,42 +26,9 @@ def show_tags():
     if request.method == 'POST':
         label = request.form['label']
         desc = request.form['description']
-        subject = ''.join(c for c in label if c.isalnum()).rstrip()
-        queryString = """
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX skmf: NAMESPACE
-        INSERT DATA {
-          skmf:SUBJECT rdfs:label "LABEL"@en-US ;
-                       rdfs:comment "DESC"@en-US .
-        }
-        """
-        queryString = queryString.replace('NAMESPACE', app.config['NAMESPACE'])
-        queryString = queryString.replace('SUBJECT', subject)
-        queryString = queryString.replace('LABEL', label)
-        queryString = queryString.replace('DESC', desc)
-        g.update.setQuery(queryString)
-        try:
-            g.update.query()
-        except Exception as e:
-            flash(str(e))
-    queryString = """
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX skmf: NAMESPACE
-    SELECT DISTINCT ?label ?description
-    WHERE {
-      ?s rdfs:label ?label ;
-         rdfs:comment ?description .
-    }
-    """
-    queryString = queryString.replace('NAMESPACE', app.config['NAMESPACE'])
-    g.sparql.setQuery(queryString)
-    try:
-        results = g.sparql.query().convert()
-        return render_template('show_tags.html', title='Manage Tags', entries=results)
-    except Exception as e:
-        flash(str(e))
-    return render_template('show_tags.html', title='Manage Tags')
+        flash(sparql_update(label, desc))
+    entries = sparql_query()
+    return render_template('show_tags.html', title='Manage Tags', entries=entries)
 
 
 @app.route('/add', methods=['POST'])
