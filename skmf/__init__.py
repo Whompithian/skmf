@@ -17,20 +17,28 @@ import sqlite3
 from contextlib import closing
 
 from flask import Flask, g
-from SPARQLWrapper import SPARQLWrapper #, JSON
+from SPARQLWrapper import SPARQLWrapper, JSON
 
 app = Flask(__name__)
 app.config.from_object('skmf.def_conf')
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 # Flask requires this circular import in most situations
 from skmf import views
+# from skmf.def_conf import SPARQL_HOST, SPARQL_PORT, SPARQL_QUERY, SPARQL_UPDATE
 # Suppress warnings about unused circular import
 assert views == views
 
 
 def connect_sparql():
-    """Return a connection to a SPARQL endpoint."""
-    return SPARQLWrapper('http://localhost:9000/sparql/')
+    """Return a query connection to a SPARQL endpoint."""
+    return SPARQLWrapper(
+        'http://' + app.config['SPARQL_HOST'] + ':' + app.config['SPARQL_PORT'] + app.config['SPARQL_QUERY'])
+
+
+def connect_update():
+    """Return an update connection to a SPARQL endpoint."""
+    return SPARQLWrapper(
+        'http://' + app.config['SPARQL_HOST'] + ':' + app.config['SPARQL_PORT'] + app.config['SPARQL_UPDATE'])
 
 
 def connect_db():
@@ -50,6 +58,9 @@ def init_db():
 def before_request():
     """Create a database connection before a Flask request."""
     g.db = connect_db()
+    g.sparql = connect_sparql()
+    g.sparql.setReturnFormat(JSON)
+    g.update = connect_update()
 
 
 @app.teardown_request

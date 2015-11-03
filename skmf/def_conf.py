@@ -19,3 +19,8 @@ SECRET_KEY = '`x8/5~Lt{|;"yHEpQW;E&0D"Zd=OdlaqF)Q}|ikI-ohAdj_m`,U~pdC$$?-3=vsn'
 USERNAME = 'admin'
 #: Password for running unit tests
 PASSWORD = 'default'
+SPARQL_HOST = 'localhost'
+SPARQL_PORT = '9000'
+SPARQL_QUERY = '/sparql/'
+SPARQL_UPDATE = '/update/'
+NAMESPACE = '<http://localhost/skmf#>'

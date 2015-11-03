@@ -74,14 +74,16 @@ class FlaskTestCase(unittest.TestCase):
         self.assertIn('<strong>HTML</strong> allowed here',
                       rv.data.decode('utf-8'))
 
+    def test_show_tags_page(self):
+        """Identify any issues loading the 'tags' view"""
+        self.login('admin', 'default')
+        rv = self.app.get('/tags')
+        self.assertIn('Manage Tags', rv.data.decode('utf-8'))
+
     #def test_html_header(self):
     #    header = '<!doctype html>'
     #    result = views.show_entries()
     #    self.assertIn(header, result)
-
-    #def test_view_landing_page(self):
-    #    result = views.index()
-    #    self.assertEqual(result, 'Index Page')
 
     #with skmf.app.test_request_context('/?name=Peter'):
     #    self.assertEqual(flask.request.path, '/')

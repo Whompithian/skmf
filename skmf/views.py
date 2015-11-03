@@ -7,6 +7,7 @@ as the frontend of the system is developed.
 
 from flask import render_template, request, session, redirect, url_for, \
                   abort, flash
+
 from skmf import app, g
 
 
@@ -15,7 +16,51 @@ from skmf import app, g
 def show_entries():
     cur = g.db.execute('select title, text from entries order by id desc')
     entries = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
-    return render_template('show_entries.html', entries=entries)
+    return render_template('show_entries.html', entries=entries, title='Flaskr')
+
+
+@app.route('/tags', methods=['GET', 'POST'])
+def show_tags():
+    """Use results from a user to add a tag entry to the triplestore"""
+    if request.method == 'POST':
+        label = request.form['label']
+        desc = request.form['description']
+        subject = ''.join(c for c in label if c.isalnum()).rstrip()
+        queryString = """
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skmf: NAMESPACE
+        INSERT DATA {
+          skmf:SUBJECT rdfs:label "LABEL"@en-US ;
+                       rdfs:comment "DESC"@en-US .
+        }
+        """
+        queryString = queryString.replace('NAMESPACE', app.config['NAMESPACE'])
+        queryString = queryString.replace('SUBJECT', subject)
+        queryString = queryString.replace('LABEL', label)
+        queryString = queryString.replace('DESC', desc)
+        g.update.setQuery(queryString)
+        try:
+            g.update.query()
+        except Exception as e:
+            flash(str(e))
+    queryString = """
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX skmf: NAMESPACE
+    SELECT DISTINCT ?label ?description
+    WHERE {
+      ?s rdfs:label ?label ;
+         rdfs:comment ?description .
+    }
+    """
+    queryString = queryString.replace('NAMESPACE', app.config['NAMESPACE'])
+    g.sparql.setQuery(queryString)
+    try:
+        results = g.sparql.query().convert()
+        return render_template('show_tags.html', title='Manage Tags', entries=results)
+    except Exception as e:
+        flash(str(e))
+    return render_template('show_tags.html', title='Manage Tags')
 
 
 @app.route('/add', methods=['POST'])
@@ -41,7 +86,7 @@ def login():
             session['logged_in'] = True
             flash('You were logged in')
             return redirect(url_for('show_entries'))
-    return render_template('login.html', error=error)
+    return render_template('login.html', error=error, title='Login')
 
 
 @app.route('/logout')

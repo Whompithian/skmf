@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block body %}
+  {% if session.logged_in %}
+    <form action="{{ url_for('show_tags') }}" method=post class=add-entry>
+      <dl>
+        <dt>Label:
+        <dd><input type=text size=30 name=label>
+        <dt>Description:
+        <dd><textarea name=description rows=3 cols=40></textarea>
+        <dd><input type=submit value=Create>
+      </dl>
+    </form>
+  {% endif %}
+  <ul class=entries>
+  {% for entry in entries['results']['bindings'] %}
+    <li><h2>{{ entry['label']['value'] }}</h2>{{ entry['description']['value'] }}
+  {% else %}
+    <li><em>Unbelievable.  No entries here so far</em>
+  {% endfor %}
+  </ul>
+{% endblock %}
