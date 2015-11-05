@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block body %}
+  <!-- Begin body block in template show_entries.html -->
   {% if session.logged_in %}
     <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
       <dl>
@@ -18,4 +19,5 @@
     <li><em>Unbelievable.  No entries here so far</em>
   {% endfor %}
   </ul>
+  <!-- End body block in template show_entries.html -->
 {% endblock %}

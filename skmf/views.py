@@ -9,7 +9,7 @@ from flask import render_template, request, session, redirect, url_for, \
                   abort, flash
 
 from skmf import app, g
-from skmf.sparqler import sparql_query, sparql_update
+from skmf.sparqler import sparql_query, sparql_insert
 
 
 @app.route('/')
@@ -22,11 +22,11 @@ def show_entries():
 
 @app.route('/tags', methods=['GET', 'POST'])
 def show_tags():
-    """Use results from a user to add a tag entry to the triplestore"""
+    """Use results from a form to add a tag entry to the datastore."""
     if request.method == 'POST':
         label = request.form['label']
         desc = request.form['description']
-        flash(sparql_update(label, desc))
+        flash(sparql_insert(label, desc))
     entries = sparql_query()
     return render_template('show_tags.html', title='Manage Tags', entries=entries)
 
