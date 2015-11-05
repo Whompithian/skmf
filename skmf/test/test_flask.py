@@ -14,7 +14,17 @@ import os
 import unittest
 import tempfile
 
+from flask.ext.testing import TestCase
+
 import skmf
+
+
+class MyTest(TestCase):
+
+    def create_app(self):
+        app = skmf.app
+        app.config['TESTING'] = True
+        return app
 
 
 class FlaskTestCase(unittest.TestCase):
@@ -79,6 +89,10 @@ class FlaskTestCase(unittest.TestCase):
         self.login('admin', 'default')
         rv = self.app.get('/tags')
         self.assertIn('Manage Tags', rv.data.decode('utf-8'))
+
+    def test_show_users_page(self):
+        rv = self.app.get('/users')
+        self.assertIn('Manage Users', rv.data.decode('utf-8'))
 
     #def test_html_header(self):
     #    header = '<!doctype html>'

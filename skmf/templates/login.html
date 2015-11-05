@@ -6,10 +6,10 @@
   <form action="{{ url_for('login') }}" method=post>
     <dl>
       <dt>Username:
-      <dd><input type=text name=username>
+      <dd>{{ form.username }}
       <dt>Password:
-      <dd><input type=password name=password>
-      <dd><input type=submit value=Login>
+      <dd>{{ form.password }}
+      <dd>{{ form.submit }}
     </dl>
   </form>
   <!-- End body block in template login.html -->

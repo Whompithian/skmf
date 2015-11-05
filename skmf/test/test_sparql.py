@@ -50,7 +50,7 @@ class SPARQLTestCase(unittest.TestCase):
 #        """."""
 #        results = sparql_query()
 #        self.assertIn('results', results)
-#
+
 #    def test_sparql_insert_sparqler(self):
 #        """."""
 #        results = sparql_query()

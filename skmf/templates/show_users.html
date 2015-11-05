@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block body %}
+  <!-- Begin body block in template show_users.html -->
+  {% if session.logged_in %}
+    <form action="{{ url_for('show_users') }}" method=post class=add-entry>
+      <dl>
+        <dt>Username:
+        <dd><input type=text size=30 name=label>
+        <dt>Password:
+        <dd><input type=password name=password>
+        <dd><input type=password name=verify>
+        <dd><input type=submit value=Create>
+      </dl>
+    </form>
+  {% endif %}
+  <ul class=entries>
+  {#% for entry in entries['results']['bindings'] %}
+    <li><h2>{{ entry['label']['value'] }}</h2>{{ entry['description']['value'] }}
+  {% else %}
+    <li><em>Unbelievable. No tags here so far.</em>
+  {% endfor %#}
+  </ul>
+  <!-- End body block in template show_users.html -->
+{% endblock %}
