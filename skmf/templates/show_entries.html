@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
   <!-- Begin body block in template show_entries.html -->
-  {% if session.logged_in %}
+  {% if current_user.is_authenticated %}
     <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
       <dl>
         <dt>Title:

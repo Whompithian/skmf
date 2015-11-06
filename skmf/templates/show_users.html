@@ -1,15 +1,16 @@
 {% extends "layout.html" %}
 {% block body %}
   <!-- Begin body block in template show_users.html -->
-  {% if session.logged_in %}
+  {% if current_user.is_authenticated %}
     <form action="{{ url_for('show_users') }}" method=post class=add-entry>
+      {{ form.hidden_tag() }}
       <dl>
-        <dt>Username:
-        <dd><input type=text size=30 name=label>
-        <dt>Password:
-        <dd><input type=password name=password>
-        <dd><input type=password name=verify>
-        <dd><input type=submit value=Create>
+        <dt>{{ form.username.label }}
+        <dd>{{ form.username }}
+        <dt>{{ form.password.label }}
+        <dd>{{ form.password }}
+        <dd>{{ form.confirm }}
+        <dd>{{ form.submit }}
       </dl>
     </form>
   {% endif %}

@@ -5,13 +5,13 @@ Hold user identifiers and access rights.
 
 class User:
 
-    def __init__(self, id = 'admin'):
+    def __init__(self, id = 'admin', hashpass = b'$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.'):
         self.id = id
-        self.hashpass = b'$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.'
-        self.authenticated = True
+        self.hashpass = hashpass
+        self.authenticated = False
         self.active = True
 
-    def get(self, id):
+    def get(id):
         if id == 'admin':
             return User(id)
         return None

@@ -4,10 +4,11 @@
   <h2>Login</h2>
   {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
   <form action="{{ url_for('login') }}" method=post>
+    {{ form.hidden_tag() }}
     <dl>
-      <dt>Username:
+      <dt>{{ form.username.label }}
       <dd>{{ form.username }}
-      <dt>Password:
+      <dt>{{ form.password.label }}
       <dd>{{ form.password }}
       <dd>{{ form.submit }}
     </dl>

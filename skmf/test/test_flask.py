@@ -19,15 +19,10 @@ from flask.ext.testing import TestCase
 import skmf
 
 
-class MyTest(TestCase):
-
-    def create_app(self):
-        app = skmf.app
-        app.config['TESTING'] = True
-        return app
+#class SKMFFrontendTestCase(TestCase):
 
 
-class FlaskTestCase(unittest.TestCase):
+class FlaskTestCase(TestCase):
     """Unit tests to verify the correct behavior of Flask views and databases.
 
     Methods:
@@ -40,14 +35,19 @@ class FlaskTestCase(unittest.TestCase):
     test_message -- Identify if messages are not filtered as expected.
     """
 
+    def create_app(self):
+        app = skmf.app
+        app.config['TESTING'] = True
+        return app
+
     def login(self, username, password):
-        return self.app.post('/login', data=dict(
+        return self.client.post('/login', data=dict(
             username=username,
             password=password
         ), follow_redirects=True)
 
     def logout(self):
-        return self.app.get('/logout', follow_redirects=True)
+        return self.client.get('/logout', follow_redirects=True)
 
     def setUp(self):
         self.db_fd, skmf.app.config['DATABASE'] = tempfile.mkstemp()
@@ -75,7 +75,7 @@ class FlaskTestCase(unittest.TestCase):
 
     def test_messages(self):
         self.login('admin', 'default')
-        rv = self.app.post('/add', data=dict(
+        rv = self.client.post('/add', data=dict(
             title='<Hello>',
             text='<strong>HTML</strong> allowed here'
         ), follow_redirects=True)
@@ -87,11 +87,11 @@ class FlaskTestCase(unittest.TestCase):
     def test_show_tags_page(self):
         """Identify any issues loading the 'tags' view"""
         self.login('admin', 'default')
-        rv = self.app.get('/tags')
+        rv = self.client.get('/tags')
         self.assertIn('Manage Tags', rv.data.decode('utf-8'))
 
     def test_show_users_page(self):
-        rv = self.app.get('/users')
+        rv = self.client.get('/users')
         self.assertIn('Manage Users', rv.data.decode('utf-8'))
 
     #def test_html_header(self):

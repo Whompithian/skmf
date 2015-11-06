@@ -43,7 +43,8 @@ def show_tags():
 
 @app.route('/add', methods=['POST'])
 def add_entry():
-    if not session.get('logged_in'):
+#    if not session.get('logged_in'):
+    if not current_user.is_authenticated:
         abort(401)
     g.db.execute('insert into entries (title, text) values (?, ?)',
                  [request.form['title'], request.form['text']])
@@ -55,20 +56,21 @@ def add_entry():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
-    form = forms.LoginForm()
-    if request.method == 'POST': #form.validate_on_submit():
-        login_user(User('admin'), remember=True)
-        flash('Logged in successfully.')
-#        user = User.get(form.username.data)
-#        if not user:
-#            error = 'User not found: ' + form.username.data
-#        elif not bcrypt.check_password_hash(user.hashpass, form.password.data):
-#            error = 'Password incorrect: ' + form.password.data
-#        else:
-#            user.authenticated = True
-#            login_user(user)
-#            return redirect(url_for('show_tags'))
-        return redirect(url_for('show_entries'))
+    form = forms.LoginForm(request.form)
+    if form.is_submitted():
+        if form.validate():
+    #        login_user(User('admin'), remember=True)
+    #        flash('You were logged in')
+            user = User.get(form.username.data)
+            if not user:
+                error = 'Invalid username'
+            elif not bcrypt.check_password_hash(user.hashpass, form.password.data):
+                error = 'Invalid password'
+            else:
+                user.authenticated = True
+                login_user(user)
+                flash('You were logged in')
+                return redirect(request.args.get('next') or url_for('show_tags'))
     return render_template('login.html', title='Login', form=form, error=error)
 
 
@@ -84,15 +86,17 @@ def logout():
     return redirect(url_for('show_entries'))
 
 
-@app.route('/users')
+@app.route('/users', methods=['GET', 'POST'])
+@login_required
 def show_users():
     """Manage user information in the datastore."""
-#    if request.method == 'POST':
-#        label = request.form['label']
-#        desc = request.form['description']
-#        flash(sparql_insert(label, desc))
+    form = forms.CreateUserForm()
+    if form.is_submitted() and form.validate():
+        user = User(form.username.data,
+                    bcrypt.generate_password_hash(form.password.data))
+        flash(user.hashpass)
 #    entries = sparql_query()
-    return render_template('show_users.html', title='Manage Users')
+    return render_template('show_users.html', title='Manage Users', form=form)
 
 
 @app.errorhandler(404)
