@@ -6,10 +6,10 @@
       {{ form.hidden_tag() }}
       <dl>
         <dt>{{ form.username.label }}
-        <dd>{{ form.username }}
+        <dd>{{ with_errors(form.username) }}
         <dt>{{ form.password.label }}
-        <dd>{{ form.password }}
-        <dd>{{ form.confirm }}
+        <dd>{{ with_errors(form.password) }}
+        <dd>{{ with_errors(form.confirm) }}
         <dd>{{ form.submit }}
       </dl>
     </form>

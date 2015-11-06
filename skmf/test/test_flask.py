@@ -10,9 +10,9 @@ Classes:
 FlaskTestCase -- Unit tests to verify correct behavior of Flask views.
 """
 
-import os
+#import os
 import unittest
-import tempfile
+#import tempfile
 
 from flask.ext.testing import TestCase
 
@@ -49,21 +49,21 @@ class FlaskTestCase(TestCase):
     def logout(self):
         return self.client.get('/logout', follow_redirects=True)
 
-    def setUp(self):
-        self.db_fd, skmf.app.config['DATABASE'] = tempfile.mkstemp()
-        skmf.app.config['TESTING'] = True
-        self.app = skmf.app.test_client()
-        skmf.init_db()
+#    def setUp(self):
+#        self.db_fd, skmf.app.config['DATABASE'] = tempfile.mkstemp()
+#        skmf.app.config['TESTING'] = True
+#        self.app = skmf.app.test_client()
+#        skmf.init_db()
+#
+#    def tearDown(self):
+#        os.close(self.db_fd)
+#        os.unlink(skmf.app.config['DATABASE'])
 
-    def tearDown(self):
-        os.close(self.db_fd)
-        os.unlink(skmf.app.config['DATABASE'])
-
-    def test_empty_db(self):
-        rv = self.app.get('/')
-        self.assertIn('No entries here so far', rv.data.decode('utf-8'))
+    def test_index(self):
+        self.assert200(self.client.get('/'))
 
     def test_login_logout(self):
+        self.assert200(self.client.get('/login'))
         rv = self.login('admin', 'default')
         self.assertIn('You were logged in', rv.data.decode('utf-8'))
         rv = self.logout()
@@ -73,16 +73,16 @@ class FlaskTestCase(TestCase):
         rv = self.login('admin', 'defaultx')
         self.assertIn('Invalid password', rv.data.decode('utf-8'))
 
-    def test_messages(self):
-        self.login('admin', 'default')
-        rv = self.client.post('/add', data=dict(
-            title='<Hello>',
-            text='<strong>HTML</strong> allowed here'
-        ), follow_redirects=True)
-        self.assertNotIn('No entries here so far', rv.data.decode('utf-8'))
-        self.assertIn('&lt;Hello&gt;', rv.data.decode('utf-8'))
-        self.assertIn('<strong>HTML</strong> allowed here',
-                      rv.data.decode('utf-8'))
+#    def test_messages(self):
+#        self.login('admin', 'default')
+#        rv = self.client.post('/add', data=dict(
+#            title='<Hello>',
+#            text='<strong>HTML</strong> allowed here'
+#        ), follow_redirects=True)
+#        self.assertNotIn('No entries here so far', rv.data.decode('utf-8'))
+#        self.assertIn('&lt;Hello&gt;', rv.data.decode('utf-8'))
+#        self.assertIn('<strong>HTML</strong> allowed here',
+#                      rv.data.decode('utf-8'))
 
     def test_show_tags_page(self):
         """Identify any issues loading the 'tags' view"""

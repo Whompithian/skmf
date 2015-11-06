@@ -5,7 +5,7 @@ Currently, this is taken from the Flaskr tutorial and will need to be modified
 as the frontend of the system is developed.
 """
 
-from flask import render_template, request, session, redirect, url_for, \
+from flask import render_template, request, redirect, url_for, \
                   abort, flash
 #from flask_wtf import csrf
 from flask.ext.bcrypt import Bcrypt
@@ -15,6 +15,7 @@ from flask.ext.login import login_required, login_user, logout_user, current_use
 from skmf import app, forms, g
 from skmf.sparqler import sparql_query, sparql_insert
 from skmf.user import User
+import skmf.i18n.en_US as lang
 
 bcrypt = Bcrypt(app)
 login_manager = LoginManager()
@@ -38,7 +39,8 @@ def show_tags():
         desc = request.form['description']
         flash(sparql_insert(label, desc))
     entries = sparql_query()
-    return render_template('show_tags.html', title='Manage Tags', entries=entries)
+    return render_template('show_tags.html',
+                           title=lang.viewTagTitle, entries=entries)
 
 
 @app.route('/add', methods=['POST'])
@@ -56,33 +58,30 @@ def add_entry():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
-    form = forms.LoginForm(request.form)
-    if form.is_submitted():
-        if form.validate():
-    #        login_user(User('admin'), remember=True)
-    #        flash('You were logged in')
-            user = User.get(form.username.data)
-            if not user:
-                error = 'Invalid username'
-            elif not bcrypt.check_password_hash(user.hashpass, form.password.data):
-                error = 'Invalid password'
-            else:
-                user.authenticated = True
-                login_user(user)
-                flash('You were logged in')
-                return redirect(request.args.get('next') or url_for('show_tags'))
+    form = forms.LoginForm()
+    if form.validate_on_submit():
+        user = User.get(form.username.data)
+        if not user:
+            # Make invalid user take same time as wrong password
+            bcrypt.generate_password_hash(form.password.data)
+            error = lang.viewLoginInvalid
+        elif not bcrypt.check_password_hash(user.hashpass, form.password.data):
+            error = lang.viewLoginInvalid
+        else:
+            user.authenticated = True
+            login_user(user)
+            flash('{0!s} {1!s}'.format(lang.viewLoginWelcome, user.name))
+            return redirect(request.args.get('next') or url_for('show_tags'))
     return render_template('login.html', title='Login', form=form, error=error)
 
 
 @app.route('/logout')
 @login_required
 def logout():
-    # The following line removes the session key, only if it exists
-#    session.pop('logged_in', None)
     user = current_user
     user.authenticated = False
     logout_user()
-    flash('You were logged out')
+    flash(lang.viewLogoutLoggedout)
     return redirect(url_for('show_entries'))
 
 
