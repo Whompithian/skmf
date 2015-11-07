@@ -17,7 +17,6 @@ import sqlite3
 from contextlib import closing
 
 from flask import Flask, g
-from SPARQLWrapper import SPARQLWrapper, JSON, POSTDIRECTLY
 
 # Initialize the Web framework, load default config file, and overwrite default
 # file with one provided in an environment variable, if available
@@ -26,15 +25,17 @@ app.config.from_object('skmf.def_conf')
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 # Flask requires this circular import in most situations
 from skmf import views
+from skmf.sparqler import SPARQLER
 # Suppress warnings about unused circular import
 assert views == views
 
 
 def connect_sparql():
     """Return a connection to a SPARQL endpoint for queries."""
-    return SPARQLWrapper(returnFormat = JSON,
-        endpoint = app.config['SPARQL_ENDPOINT'] + app.config['SPARQL_QUERY'],
-        updateEndpoint = app.config['SPARQL_ENDPOINT'] + app.config['SPARQL_QUERY'])
+    return SPARQLER.get(endpoint = app.config['SPARQL_ENDPOINT']
+                                 + app.config['SPARQL_QUERY'],
+                        updateEndpoint = app.config['SPARQL_ENDPOINT']
+                                       + app.config['SPARQL_UPDATE'])
 
 
 def connect_db():
@@ -55,7 +56,6 @@ def before_request():
     """Establish a database connection before any Flask requests."""
     g.db = connect_db()
     g.sparql = connect_sparql()
-    g.sparql.setRequestMethod(POSTDIRECTLY)
 
 
 @app.teardown_request

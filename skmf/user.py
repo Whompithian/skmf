@@ -10,25 +10,40 @@ which must be handled outside of this class. id must be a unicode string and it
 must be unique for each user. While this class provides a basic schema for a
 user, RDF allows for dynamic shaping of its schema by merely adding data, so
 this class provides a data element to hold a dictionary of fields that are not
-part of the interface of this class.
+part of the interface of this class. Since this system does not allow users
+to authenticate anonymously, a User must have a hashpass value.
 """
+
+from skmf import g
+
 
 class User:
 
-    def __init__(self, id = 'admin',
-            hashpass =
-            b'$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.'):
-        self.id = id
-        self.hashpass = hashpass
-        self.name = 'Stewart'
+    def __init__(self, id, hashpass, name = '', active = True):
+#            b'$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.'
+        self.id            = id
+        self.hashpass      = hashpass
+        self.name          = name
         self.authenticated = False
-        self.active = True
-        self.data = []
+        self.active        = active
 
     def get(id):
-        if id == 'admin':
-            return User(id)
+        result = g.sparql.query_user(id)
+        if result:
+            try:
+                data        = result['results']['bindings'][0]
+                user        = User(id, data['hashpass']['value'].encode())
+                user.active = data['active']['value'] != '0'
+                user.name   = data['name']['value']
+                return user
+            except IndexError:
+                return None
+            except KeyError:
+                return None
         return None
+
+    def save(self):
+        pass
 
     def is_authenticated(self):
         return self.authenticated

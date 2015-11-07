@@ -13,7 +13,7 @@ from flask.ext.login import LoginManager
 from flask.ext.login import login_required, login_user, logout_user, current_user
 
 from skmf import app, forms, g
-from skmf.sparqler import sparql_query, sparql_insert
+#from skmf.sparqler import sparql_query, sparql_insert
 from skmf.user import User
 import skmf.i18n.en_US as lang
 
@@ -37,8 +37,8 @@ def show_tags():
     if request.method == 'POST':
         label = request.form['label']
         desc = request.form['description']
-        flash(sparql_insert(label, desc))
-    entries = sparql_query()
+        flash(g.sparql.sparql_insert(label, desc))
+    entries = g.sparql.sparql_query()
     return render_template('show_tags.html',
                            title=lang.viewTagTitle, entries=entries)
 
@@ -110,4 +110,4 @@ def page_not_found(error):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id)
+    return User.get(user_id)

@@ -1,0 +1,35 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix skmf: <http://localhost/skmf#> .
+
+skmf:id a rdfs:Class ;
+    rdfs:label "UserID"@en-US ;
+    rdfs:comment "A unique string to identify a registered user."@en-US ;
+    rdfs:isDefinedBy <http://localhost/skmf#> .
+
+skmf:hashpass a rdfs:Class ;
+    rdfs:label "HashedPassword"@en-US ;
+    rdfs:comment "The hash of a user's password."@en-US ;
+    rdfs:isDefinedBy <http://localhost/skmf#> .
+
+skmf:active a rdf:Property ;
+    rdfs:label "Active"@en-US ;
+    rdfs:comment "Whether or not a user account is active."@en-US ;
+    rdfs:isDefinedBy <http://localhost/skmf#> .
+
+skmf:User a rdfs:Class ;
+    rdfs:label "User"@en-US ;
+    rdfs:comment "The class of users containing account information."@en-US ;
+    rdfs:isDefinedBy <http://localhost/skmf#> ;
+    rdfs:member skmf:id, skmf:hashpass, skmf:active, foaf:name .
+
+skmf:Resource a rdfs:Class ;
+    rdfs:label "Resource"@en-US ;
+    rdfs:comment "The class of objects that could be the subject of a search."@en-US ;
+    rdfs:isDefinedBy <http://localhost/skmf#> .
+
+skmf:Connection a rdf:Property ;
+    rdfs:label "Property"@en-US ;
+    rdfs:comment "The class of descriptions that can be applied to a resource."@en-US ;
+    rdfs:isDefinedBy <http://localhost/skmf#> .

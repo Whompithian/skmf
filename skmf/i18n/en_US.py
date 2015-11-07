@@ -1,3 +1,4 @@
+ISOCode                 = 'en-US'
 formCreateUserConfError = 'Passwords differ'
 formCreateUserConfTitle = 'Confirm password:'
 formCreateUserLenError1 = 'Password must contain at least'
