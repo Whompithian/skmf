@@ -10,13 +10,14 @@ from skmf import app
 from skmf.i18n.en_US import ISOCode
 
 class SPARQLER(SPARQLWrapper):
-    
-    def get(endpoint, updateEndpoint):
-        sparql = SPARQLER(endpoint=endpoint,
-                          updateEndpoint=updateEndpoint,
-                          returnFormat=JSON)
-        return sparql
-    
+
+    def __init__(self, endpoint, updateEndpoint=None,
+                 returnFormat=JSON, defaultGraph=None):
+        super(SPARQLER, self).__init__(endpoint,
+                                       updateEndpoint=updateEndpoint,
+                                       returnFormat=returnFormat,
+                                       defaultGraph=defaultGraph)
+
     def query_user(self, id):
         """Returns the values of a User in the SPARQL endpoint."""
         queryString = """
@@ -41,7 +42,7 @@ class SPARQLER(SPARQLWrapper):
         except SPARQLExceptions.EndPointInternalError as f:
             return f.msg
 
-    def sparql_query(self):
+    def query_subject(self):
         """STUB: Returns the results of a query to a SPARQL endpoint."""
         queryString = """
         {prefix}
@@ -60,7 +61,6 @@ class SPARQLER(SPARQLWrapper):
             return e.msg
         except SPARQLExceptions.EndPointInternalError as f:
             return f.msg
-
 
     def sparql_insert(self, label, desc):
         """STUB: Insert new data into a SPARQL endpoint."""
@@ -82,7 +82,6 @@ class SPARQLER(SPARQLWrapper):
             return e.msg
         except SPARQLExceptions.EndPointInternalError as f:
             return f.msg
-
 
     def sparql_delete(endpoint, label):
         """STUB: Delete the specified data from a SPARQL endpoint."""

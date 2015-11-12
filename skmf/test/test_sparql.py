@@ -12,7 +12,7 @@ import unittest
 from SPARQLWrapper import SPARQLExceptions
 
 from skmf import connect_sparql
-#from skmf.sparqler import sparql_query, sparql_insert, sparql_delete
+from skmf.sparqler import SPARQLER
 
 
 class SPARQLTestCase(unittest.TestCase):
@@ -33,6 +33,13 @@ class SPARQLTestCase(unittest.TestCase):
         #: Query string that should be accepted by any SPARQL endpoint
         self.query_good = 'SELECT * WHERE { ?s ?p ?o . } LIMIT 1'
 
+    def test_sparql_endpoint_bad(self):
+        """Identify if a missing endpoint raises an exception."""
+        sparql = SPARQLER('http://localhost:9000/notthere')
+        sparql.setQuery(self.query_good)
+        with self.assertRaises(SPARQLExceptions.EndPointNotFound):
+            sparql.query()
+
     def test_sparql_query_bad(self):
         """Identify if truly bad queries are accepted by the endpoint."""
         self.sparql.setQuery(self.query_bad)
@@ -44,6 +51,18 @@ class SPARQLTestCase(unittest.TestCase):
         self.sparql.setQuery(self.query_good)
         results = self.sparql.queryAndConvert()
         self.assertIn('head', results)
+
+    def test_sparql_query_user(self):
+        """Identify how user queries are handled by the endpoint."""
+        result = self.sparql.query_user('admin')
+        data = result['results']['bindings'][0]
+        self.assertEqual(data['name']['value'], 'Administrator')
+        self.assertEqual(data['active']['value'], '1')
+        self.assertEqual(data['hashpass']['value'],
+                '$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.')
+        result = self.sparql.query_user('bob')
+        with self.assertRaises(IndexError):
+            result['results']['bindings'][0]
 
     # Currently ouf of context
 #    def test_sparql_query_sparqler(self):

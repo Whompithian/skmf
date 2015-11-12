@@ -32,10 +32,10 @@ assert views == views
 
 def connect_sparql():
     """Return a connection to a SPARQL endpoint for queries."""
-    return SPARQLER.get(endpoint = app.config['SPARQL_ENDPOINT']
-                                 + app.config['SPARQL_QUERY'],
-                        updateEndpoint = app.config['SPARQL_ENDPOINT']
-                                       + app.config['SPARQL_UPDATE'])
+    return SPARQLER(endpoint = app.config['SPARQL_ENDPOINT']
+                             + app.config['SPARQL_QUERY'],
+                    updateEndpoint = app.config['SPARQL_ENDPOINT']
+                                   + app.config['SPARQL_UPDATE'])
 
 
 def connect_db():

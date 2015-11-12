@@ -19,13 +19,13 @@ from skmf import g
 
 class User:
 
-    def __init__(self, id, hashpass, name = '', active = True):
+    def __init__(self, id, hashpass, name = '', active = False):
 #            b'$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.'
         self.id            = id
         self.hashpass      = hashpass
         self.name          = name
-        self.authenticated = False
         self.active        = active
+        self.authenticated = False
 
     def get(id):
         result = g.sparql.query_user(id)
@@ -56,3 +56,6 @@ class User:
 
     def get_id(self):
         return self.id
+
+    def get_name(self):
+        return self.name

@@ -26,6 +26,6 @@ class CreateUserForm(Form):
                             lang.formCreateUserLenError2))])
     confirm = PasswordField(lang.formCreateUserConfTitle,
             [validators.InputRequired(),
-            validators.EqualTo(password,
+            validators.EqualTo('password',
                                message=lang.formCreateUserConfError)])
     submit = SubmitField(lang.formCreateUserSubTitle)
