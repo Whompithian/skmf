@@ -17,7 +17,8 @@
 <div class=page>
   <h1>{{ title }}</h1>
   <div class=metanav>
-    <a href="{{ url_for('show_entries') }}">Home</a>
+    <a href="/">Home</a>
+    {# <a href="{{ url_for('show_entries') }}">Entries</a> #}
     <a href="{{ url_for('show_tags') }}">Tags</a>
     <a href="{{ url_for('show_users') }}">Users</a>
   {% if not current_user.is_authenticated %}

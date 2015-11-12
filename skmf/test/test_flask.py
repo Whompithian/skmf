@@ -1,18 +1,16 @@
-"""skmf.test_flask by Armin Ronacher
-(Modified by Brendan Sweeney, CSS 593, 2015.)
+"""skmf.test.test_flask by Brendan Sweeney, CSS 593, 2015.
 
 Provide a set of test cases to verify the correct behavior of the user-facing
-portions of the program that are handled by Flask. Currently, this is taken
-from the Flaskr tutorial and will need to be modified as the frontend of the
-system is developed.
+portions of the program that are handled by Flask. These views make extensive
+use of the SPARQL endpoint connection and, by extension, test much of the
+functionality of the SPARQL interface.
 
 Classes:
-FlaskTestCase -- Unit tests to verify correct behavior of Flask views.
+    BaseTestCase -- Setup class for other TestCase classes.
+    FlaskTestCase -- Unit tests to verify correct behavior of Flask views.
 """
 
-#import os
 import unittest
-#import tempfile
 
 from flask import url_for
 from flask.ext.bcrypt import Bcrypt
@@ -20,14 +18,26 @@ from flask.ext.login import current_user
 from flask.ext.testing import TestCase
 
 from skmf import app
-import skmf.i18n.en_US as lang
+import skmf.i18n.en_US as uiLabel
 
 
 class BaseTestCase(TestCase):
-    """A base test case for flask-tracking."""
+    """A base test case for common setup tasks.
+    
+    An extension of the Flask-Testing TestCase that adds methods to be used by
+    other tesk cases in this module. No tests are defined. This class is meant
+    to be subclassed in order to define actual tests. Any methods defined in
+    this class may be safely overridden, so long as create_app properly sets up
+    the Flask app.
+    
+    Methods:
+        create_app -- Setup the Flask app and set commonly needed parameters
+        login -- Obtain a user session through the login view.
+        logout -- Clear a user session through the logout view.
+    """
 
     def create_app(self):
-        app.config.from_envvar('FLASKR_SETTINGS', silent=False)
+        app.config.from_envvar('FLASK_SETTINGS', silent=False)
         self.bcrypt = Bcrypt(app)
         return app
 
@@ -39,16 +49,6 @@ class BaseTestCase(TestCase):
 
     def logout(self):
         return self.client.get(url_for('logout'), follow_redirects=True)
-
-#    def setUp(self):
-#        self.db_fd, skmf.app.config['DATABASE'] = tempfile.mkstemp()
-#        skmf.app.config['TESTING'] = True
-#        self.app = skmf.app.test_client()
-#        skmf.init_db()
-#
-#    def tearDown(self):
-#        os.close(self.db_fd)
-#        os.unlink(skmf.app.config['DATABASE'])
 
 
 class FlaskTestCase(BaseTestCase):
@@ -65,19 +65,17 @@ class FlaskTestCase(BaseTestCase):
     """
 
     def test_views_get_responses(self):
-        self.assert200(self.client.get(url_for('show_entries')))
-        self.assertTemplateUsed('show_entries.html')
-        self.assertContext('title', 'Flaskr')
         self.assert200(self.client.get(url_for('show_tags')))
         self.assertTemplateUsed('show_tags.html')
-        self.assertContext('title', lang.viewTagTitle)
+        self.assertContext('title', uiLabel.viewTagTitle)
         self.assert200(self.client.get(url_for('login')))
         self.assertTemplateUsed('login.html')
-        self.assertContext('title', lang.viewLoginTitle)
+        self.assertContext('title', uiLabel.viewLoginTitle)
+        self.assert405(self.client.get(url_for('add_tag')))
         response = self.client.get(url_for('show_users'))
         self.assertRedirects(response, url_for('login') + '?next=%2Fusers')
 
-    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
+#    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
     def test_login_logout(self):
         with self.client:
             self.assertTrue(current_user.is_anonymous)
@@ -93,7 +91,7 @@ class FlaskTestCase(BaseTestCase):
             self.assertTrue(current_user.is_anonymous)
             self.assertIn('You were logged out', response.data.decode('utf-8'))
 
-    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
+#    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
     def test_login_invalid(self):
         with self.client:
             response = self.login('Admin', 'default', True)
@@ -106,38 +104,34 @@ class FlaskTestCase(BaseTestCase):
             self.assertIn('Invalid username or password',
                           response.data.decode('utf-8'))
 
-    def test_view_while_logged_in(self):
-        """Verify view behavior when user is logged in"""
+#    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
+    def test_view_restricted(self):
+        """Verify view behavior when user is not logged in"""
+        with self.client:
+            response = self.client.post(url_for('add_tag'), data=dict(
+                label='Label',
+                description='A short description.'))
+            self.assertRedirects(response, url_for('login') + '?next=%2Fadd')
         with self.client:
             response = self.client.post(url_for('show_users'), data=dict(
                 username='bob',
                 password='password',
-                confirm='password'
-            ), follow_redirects=True)
-            self.assert200(response)
-            self.assertTemplateUsed('login.html')
-            self.assertContext('title', lang.viewLoginTitle)
+                confirm='password'))
+            self.assertRedirects(response, url_for('login') + '?next=%2Fusers')
             self.login('bob', 'default', True)
             self.assertTrue(current_user.is_anonymous)
             self.login('admin', 'default', True)
             self.assert200(self.client.get(url_for('show_users')))
             self.assertTemplateUsed('show_users.html')
-            self.assertContext('title', lang.viewUserTitle)
-#            self.assert200(response)
-#            self.login('admin', 'default', True)
-#            response = self.client.get('/tags')
-#            self.assertIn('Manage Tags', response.data.decode('utf-8'))
+            self.assertContext('title', uiLabel.viewUserTitle)
 
-#    def test_messages(self):
-#        self.login('admin', 'default')
-#        rv = self.client.post('/add', data=dict(
-#            title='<Hello>',
-#            text='<strong>HTML</strong> allowed here'
-#        ), follow_redirects=True)
-#        self.assertNotIn('No entries here so far', rv.data.decode('utf-8'))
-#        self.assertIn('&lt;Hello&gt;', rv.data.decode('utf-8'))
-#        self.assertIn('<strong>HTML</strong> allowed here',
-#                      rv.data.decode('utf-8'))
+    def test_view_add_tag(self):
+        """Verify that tags may be added when user is logged in"""
+        pass
+
+    def test_view_create_user(self):
+        """Verify that users may be created when admin is logged in"""
+        pass
 
     #with skmf.app.test_request_context('/?name=Peter'):
     #    self.assertEqual(flask.request.path, '/')

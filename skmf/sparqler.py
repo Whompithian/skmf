@@ -1,7 +1,15 @@
 """skmf.sparqler by Brendan Sweeney, CSS 593, 2015.
 
 Perform operations on a SPARQL endpoint, such as inserts, queries, and updates.
-A connection to the endpoint must be passed to each function.
+Higher-level modules should call this module to interface with the SPARQL end-
+point rather than attempting to form and execute their own queries. The SPARQL
+endpoint must be available and writable. If it is not, an exception will be
+raised, but only once a query is attempted. An attempt is made to keep queries
+as generalized as possible so that they may be dynamically formed rather than
+using static query strings with variable parameters.
+
+Classes:
+SPARQLER -- An extension of SPARQLWrapper to handle special cases for SKMF.
 """
 
 from SPARQLWrapper import JSON, SPARQLExceptions, SPARQLWrapper

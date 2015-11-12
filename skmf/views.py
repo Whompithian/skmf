@@ -1,12 +1,29 @@
-"""skmf.views by Armin Ronacher
-(Modified by Brendan Sweeney, CSS 593, 2015.)
+"""skmf.views by Brendan Sweeney, CSS 593, 2015.
 
-Currently, this is taken from the Flaskr tutorial and will need to be modified
-as the frontend of the system is developed.
+Define the views that are rendered by Flask to the end user. This controls what
+action to take given a URL path provided by the user. Typically, a path will
+result in the display of a Web page which is rendered from a template. Multiple
+paths may lead to the same action, but multiple actions cannot directly share a
+path. Instead, the action for one path may include a conditional redirect for
+another path. Any views that require the user to be authenticated have the
+@login_required decorator to automatically redirect unauthenticated users to
+login view. Form validation is handled by WTForms and sessions management is
+handled by Flask-Login, but it is still necessary to properly verify any user
+provided data, particularly when it will be passed to an object that interacts
+with the SPARQL endpoint.
+
+Functions:
+add_tag -- Create a new tag to store with the SPARQL endpoint.
+load_user -- Retrieve a user from the triplestore for login authentication.
+login -- Authenticate and create a session for a valid user.
+logout -- Clear the session for a logged in user.
+page_not_found -- Handle user attempts to access an invalid path.
+show_tags -- Display the tags that have been defined and stored.
+show_users -- List existing users and allow new users to be created.
 """
 
 from flask import render_template, request, redirect, url_for, \
-                  abort, flash
+                  flash  #, abort
 #from flask_wtf import csrf
 from flask.ext.bcrypt import Bcrypt
 from flask.ext.login import LoginManager, login_required, login_user, \
@@ -14,7 +31,7 @@ from flask.ext.login import LoginManager, login_required, login_user, \
 
 from skmf import app, forms, g
 from skmf.user import User
-import skmf.i18n.en_US as lang
+import skmf.i18n.en_US as uiLabel
 
 bcrypt = Bcrypt(app)
 login_manager = LoginManager()
@@ -22,37 +39,47 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 
-@app.route('/entries')
-def show_entries():
-    cur = g.db.execute('select title, text from entries order by id desc')
-    entries = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
-    return render_template('show_entries.html', title='Flaskr', entries=entries)
+#@app.route('/entries')
+#def show_entries():
+#    cur = g.db.execute('select title, text from entries order by id desc')
+#    entries = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
+#    return render_template('show_entries.html', title='Flaskr', entries=entries)
 
 
 @app.route('/')
-@app.route('/index', methods=['GET', 'POST'])
+@app.route('/index')
 def show_tags():
     """Use results from a form to add a tag entry to the datastore."""
-    if request.method == 'POST':
-        label = request.form['label']
-        desc = request.form['description']
-        flash(g.sparql.sparql_insert(label, desc))
     entries = g.sparql.query_subject()
-    return render_template('show_tags.html',
-                           title=lang.viewTagTitle, entries=entries)
+    form = forms.AddEntryForm()
+    return render_template('show_tags.html', title=uiLabel.viewTagTitle,
+                           entries=entries, form=form)
+
+
+#@app.route('/addold', methods=['POST'])
+#@login_required
+#def add_entry():
+##    if not session.get('logged_in'):
+#    if not current_user.is_authenticated:
+#        abort(401)
+#    g.db.execute('insert into entries (title, text) values (?, ?)',
+#                 [request.form['title'], request.form['text']])
+#    g.db.commit()
+#    return redirect(url_for('show_entries'))
 
 
 @app.route('/add', methods=['POST'])
 @login_required
-def add_entry():
+def add_tag():
 #    if not session.get('logged_in'):
-    if not current_user.is_authenticated:
-        abort(401)
-    g.db.execute('insert into entries (title, text) values (?, ?)',
-                 [request.form['title'], request.form['text']])
-    g.db.commit()
-    flash('New entry was successfully posted')
-    return redirect(url_for('show_entries'))
+#    if not current_user.is_authenticated:
+#        abort(401)
+    form = forms.AddEntryForm()
+    if form.validate_on_submit():
+        label = form.label.data
+        desc = form.description.data
+        flash(g.sparql.sparql_insert(label, desc))
+    return redirect(url_for('show_tags'), form=form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -64,16 +91,16 @@ def login():
         if not user:
             # Make invalid username take same time as wrong password
             bcrypt.generate_password_hash(form.password.data)
-            error = lang.viewLoginInvalid
+            error = uiLabel.viewLoginInvalid
         elif not bcrypt.check_password_hash(user.hashpass, form.password.data):
             print('Password not valid')
-            error = lang.viewLoginInvalid
+            error = uiLabel.viewLoginInvalid
         else:
             user.authenticated = True
             login_user(user)
-            flash('{0!s} {1!s}'.format(lang.viewLoginWelcome, user.name))
+            flash('{0!s} {1!s}'.format(uiLabel.viewLoginWelcome, user.name))
             return redirect(request.args.get('next') or url_for('show_tags'))
-    return render_template('login.html', title=lang.viewLoginTitle,
+    return render_template('login.html', title=uiLabel.viewLoginTitle,
                            form=form, error=error)
 
 
@@ -83,7 +110,7 @@ def logout():
     user = current_user
     user.authenticated = False
     logout_user()
-    flash(lang.viewLogoutLoggedout)
+    flash(uiLabel.viewLogoutLoggedout)
     return redirect(url_for('show_tags'))
 
 
@@ -97,7 +124,7 @@ def show_users():
                     bcrypt.generate_password_hash(form.password.data))
         flash(user.hashpass)
 #    entries = query_user()
-    return render_template('show_users.html', title=lang.viewUserTitle,
+    return render_template('show_users.html', title=uiLabel.viewUserTitle,
                            form=form)
 
 

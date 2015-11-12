@@ -2,18 +2,17 @@
 {% block body %}
   <!-- Begin body block in template show_tags.html -->
   {% if current_user.is_authenticated %}
-    <form action="{{ url_for('show_tags') }}" method=post class=add-entry>
+    <form action="{{ url_for('add_tag') }}" method=post class=add-entry>
       <dl>
-        <dt>Label:
-        <dd><input type=text size=30 name=label>
-        <dt>Description:
-        <dd><textarea name=description rows=3 cols=40></textarea>
-        <dd><input type=submit value=Create>
+        <dt>{{ form.label.label }}
+        <dd>{{ with_errors(form.label) }}
+        <dt>{{ form.description.label }}
+        <dd>{{ with_errors(form.description) }}
+        <dd>{{ form.submit }}
       </dl>
     </form>
   {% endif %}
   <ul class=entries>
-  {#<h2>{{ entries }}</h2>#}
   {% for entry in entries['results']['bindings'] %}
     <li><h2>{{ entry['label']['value'] }}</h2>{{ entry['description']['value'] }}
   {% else %}

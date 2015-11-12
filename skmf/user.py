@@ -12,6 +12,9 @@ user, RDF allows for dynamic shaping of its schema by merely adding data, so
 this class provides a data element to hold a dictionary of fields that are not
 part of the interface of this class. Since this system does not allow users
 to authenticate anonymously, a User must have a hashpass value.
+
+Classes:
+User -- Representation of a user of SKMF, made persistent in a SPARQL endpoint.
 """
 
 from skmf import g
@@ -26,6 +29,7 @@ class User:
         self.name          = name
         self.active        = active
         self.authenticated = False
+        self.data          = {}
 
     def get(id):
         result = g.sparql.query_user(id)
