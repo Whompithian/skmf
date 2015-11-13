@@ -18,6 +18,15 @@ from skmf import app
 from skmf.i18n.en_US import ISOCode
 
 class SPARQLER(SPARQLWrapper):
+    """Extend SPARQLWrapper to handle special cases for the SKMF package.
+    
+    Most of the behavior and functionality of SPARQLWrapper are maintained. A
+    few methods are added to handle boilerplate queries with some dynamic
+    elements.
+    
+    Methods:
+        TODO: Make these queries really pop!
+    """
 
     def __init__(self, endpoint, updateEndpoint=None,
                  returnFormat=JSON, defaultGraph=None):

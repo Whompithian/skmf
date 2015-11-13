@@ -22,28 +22,20 @@ show_tags -- Display the tags that have been defined and stored.
 show_users -- List existing users and allow new users to be created.
 """
 
-from flask import render_template, request, redirect, url_for, \
-                  flash  #, abort
+from flask import render_template, request, redirect, url_for, flash
 #from flask_wtf import csrf
 from flask.ext.bcrypt import Bcrypt
 from flask.ext.login import LoginManager, login_required, login_user, \
                             logout_user, current_user
 
 from skmf import app, forms, g
-from skmf.user import User
+from skmf.subject import User
 import skmf.i18n.en_US as uiLabel
 
 bcrypt = Bcrypt(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-
-
-#@app.route('/entries')
-#def show_entries():
-#    cur = g.db.execute('select title, text from entries order by id desc')
-#    entries = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
-#    return render_template('show_entries.html', title='Flaskr', entries=entries)
 
 
 @app.route('/')
@@ -56,24 +48,9 @@ def show_tags():
                            entries=entries, form=form)
 
 
-#@app.route('/addold', methods=['POST'])
-#@login_required
-#def add_entry():
-##    if not session.get('logged_in'):
-#    if not current_user.is_authenticated:
-#        abort(401)
-#    g.db.execute('insert into entries (title, text) values (?, ?)',
-#                 [request.form['title'], request.form['text']])
-#    g.db.commit()
-#    return redirect(url_for('show_entries'))
-
-
 @app.route('/add', methods=['POST'])
 @login_required
 def add_tag():
-#    if not session.get('logged_in'):
-#    if not current_user.is_authenticated:
-#        abort(401)
     form = forms.AddEntryForm()
     if form.validate_on_submit():
         label = form.label.data
@@ -90,10 +67,11 @@ def login():
         user = User.get(form.username.data)
         if not user:
             # Make invalid username take same time as wrong password
+            # Note: this may open up a denial of service vulnerability; it may
+            #        be better to use sleep(1) instead.
             bcrypt.generate_password_hash(form.password.data)
             error = uiLabel.viewLoginInvalid
-        elif not bcrypt.check_password_hash(user.hashpass, form.password.data):
-            print('Password not valid')
+        elif not bcrypt.check_password_hash(user.get_hash(), form.password.data):
             error = uiLabel.viewLoginInvalid
         else:
             user.authenticated = True
@@ -122,7 +100,7 @@ def show_users():
     if form.is_submitted() and form.validate():
         user = User(form.username.data,
                     bcrypt.generate_password_hash(form.password.data))
-        flash(user.hashpass)
+        flash(user.get_hash())
 #    entries = query_user()
     return render_template('show_users.html', title=uiLabel.viewUserTitle,
                            form=form)

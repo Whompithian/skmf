@@ -1,4 +1,4 @@
-"""skmf.def_conf by Brendan Sweeney, CSS 593, 2015.
+"""skmf.conf_def by Brendan Sweeney, CSS 593, 2015.
 
 Set of default configuration values for the Flask component. These values are
 placed in a separate file for maintainability and this default file may be
@@ -40,13 +40,13 @@ SPARQL_UPDATE = '/update/'
 SPARQL_ENDPOINT = 'http://' + SPARQL_HOST + ':' + SPARQL_PORT
 """str: Full URL of the SPARQL endpoint."""
 
-NAMESPACE = '<http://localhost/skmf#>'
+NAMESPACE = 'http://localhost/skmf#'
 """str: Local namespace for subjects added to the datastore."""
 
 PREFIXES = """
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
     PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-    PREFIX skmf: {namespace}
+    PREFIX skmf: <{namespace}>
     """.format(namespace=NAMESPACE)
 """str: List of common prefixes to use with all SPARQL commands."""

@@ -3,6 +3,7 @@
   <!-- Begin body block in template show_tags.html -->
   {% if current_user.is_authenticated %}
     <form action="{{ url_for('add_tag') }}" method=post class=add-entry>
+      {{ form.hidden_tag() }}
       <dl>
         <dt>{{ form.label.label }}
         <dd>{{ with_errors(form.label) }}

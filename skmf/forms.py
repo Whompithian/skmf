@@ -21,9 +21,24 @@ from wtforms import PasswordField, StringField, SubmitField, validators
 import skmf.i18n.en_US as uiLabel
 
 MIN_PASS_LEN = 8
+"""Minimum length to allow for user passwords."""
 
 
 class LoginForm(Form):
+    """Collect information to authenticate a user from a Web page.
+    
+    The form is valid only if both username and password are provided before it
+    is submitted. Password length should not need to be validated here because
+    legitimate users are expected to remember the length of their passwords.
+    It is up to the callig view to determine the legitimacy of the provided
+    password.
+    
+    Attributes:
+        password -- An obscured field to collect an existing user's password.
+        submit -- A button to submit the rendered form.
+        username -- A text field to collect an existing user's unique id.
+    """
+
     username = StringField(uiLabel.formLoginUserTitle,
             [validators.InputRequired(message=uiLabel.formLoginUserError)])
     password = PasswordField(uiLabel.formLoginPassTitle,
@@ -32,6 +47,12 @@ class LoginForm(Form):
 
 
 class AddEntryForm(Form):
+    """Collect information to be stored through the SPARQL endpoint.
+    
+    TODO: This form should dynamically expand as the user selects more options.
+            It may turn out to be much more complex.
+    """
+
     label = StringField(uiLabel.formEntryLabelTitle,
             [validators.InputRequired(message=uiLabel.formEntryLabelError)])
     description = StringField(uiLabel.formEntryDescTitle,
@@ -40,6 +61,20 @@ class AddEntryForm(Form):
 
 
 class CreateUserForm(Form):
+    """Collect information from which to create a new user.
+    
+    The form is only valid if all fields are filled before it is submitted. In
+    addition, the password and confirm fields must match and must contain at
+    least MIN_PASS_LEN characters. It is up to the colling view to ensure that
+    the specified user does not already exist before creating it.
+    
+    Attributes:
+        confirm -- A second password field to prevent a mistyped password.
+        password -- An obscured field to collect the password for a new user.
+        submit -- A button to submit the rendered form.
+        username -- A text field to collect the unique id of a new user.
+    """
+
     username = StringField(uiLabel.formCreateUserUserTitle,
             [validators.InputRequired(message=uiLabel.formCreateUserUserError)])
     password = PasswordField(uiLabel.formCreateUserPassTitle,

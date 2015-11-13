@@ -53,15 +53,15 @@ class BaseTestCase(TestCase):
 
 class FlaskTestCase(BaseTestCase):
     """Unit tests to verify the correct behavior of Flask views and databases.
+    
+    Validate the behavior of template rendering, redirects, session management,
+    form handling, error handling, and SPARQL endpoint operations.
 
     Methods:
-    login -- Return the login status view after attempting to login a user.
-    logout -- Return the logout status view after logging out a user.
-    setUp -- Establish a database connection and switch on testing mode.
-    tearDown -- Close the database and its associated file.
-    test_empty_db -- Identify if the database seems not to be empty.
-    test_login_logout -- Identify if login does not work properly.
-    test_message -- Identify if messages are not filtered as expected.
+        test_login_invalid -- 
+        test_login_logout -- 
+        test_views_get_responses -- 
+        test_view_restricted -- 
     """
 
     def test_views_get_responses(self):

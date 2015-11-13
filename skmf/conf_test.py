@@ -1,10 +1,11 @@
-"""skmf.def_conf by Brendan Sweeney, CSS 593, 2015.
+"""skmf.conf_test by Brendan Sweeney, CSS 593, 2015.
 
-Set of default configuration values for the Flask component. These values are
+Set of testing configuration values for the Flask component. These values are
 placed in a separate file for maintainability and this default file may be
 overridden by specifying a different file with the FLASKR_SETTINGS environment
 variable. This will prevent user settings from being overwritten by defaults in
-the event of a package upgrade.
+the event of a package upgrade. These values should only be used in a testing
+environment.
 """
 
 DATABASE = '/tmp/flaskr.db'
