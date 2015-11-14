@@ -49,7 +49,7 @@ class LoginForm(Form):
 class AddEntryForm(Form):
     """Collect information to be stored through the SPARQL endpoint.
     
-    TODO: This form should dynamically expand as the user selects more options.
+    This form should dynamically expand as the user selects more options.
             It may turn out to be much more complex.
     """
 

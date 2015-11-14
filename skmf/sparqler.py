@@ -25,7 +25,7 @@ class SPARQLER(SPARQLWrapper):
     elements.
     
     Methods:
-        TODO: Make these queries really pop!
+        Make these queries really pop!
     """
 
     def __init__(self, endpoint, updateEndpoint=None,
@@ -59,16 +59,21 @@ class SPARQLER(SPARQLWrapper):
         except SPARQLExceptions.EndPointInternalError as f:
             return f.msg
 
-    def query_subject(self):
-        """STUB: Returns the results of a query to a SPARQL endpoint."""
+    def query_subject(self, id, *args):
+        """Return all predicates and objects of the subject having id."""
+        graphs = 'FROM <{namespace}>'.format(namespace=app.config['NAMESPACE'])
+        for graph in args:
+            graph = app.config['NAMESPACE'] + '/' + graph
+            graphs += '\nFROM <{graph}>'.format(graph=graph)
         queryString = """
         {prefix}
-        SELECT DISTINCT ?label ?description
+        SELECT DISTINCT ?p ?o
+        {graphs}
         WHERE {{
-          ?s rdfs:label ?label ;
-             rdfs:comment ?description .
+          <{subject}> ?p ?o .
         }}
-        """.format(prefix=app.config['PREFIXES'])
+        """.format(prefix=app.config['PREFIXES'], graphs=graphs, subject=id)
+        print(queryString)
         self.setQuery(queryString)
         try:
             return self.queryAndConvert()

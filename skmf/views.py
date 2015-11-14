@@ -29,7 +29,7 @@ from flask.ext.login import LoginManager, login_required, login_user, \
                             logout_user, current_user
 
 from skmf import app, forms, g
-from skmf.subject import User
+from skmf.resource import User
 import skmf.i18n.en_US as uiLabel
 
 bcrypt = Bcrypt(app)

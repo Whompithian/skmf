@@ -17,7 +17,8 @@ from flask.ext.bcrypt import Bcrypt
 from flask.ext.login import current_user
 from flask.ext.testing import TestCase
 
-from skmf import app
+from skmf import app, connect_sparql
+from skmf.resource import RDFObject
 import skmf.i18n.en_US as uiLabel
 
 
@@ -64,6 +65,56 @@ class FlaskTestCase(BaseTestCase):
         test_view_restricted -- 
     """
 
+    def test_sparql_query_subject(self):
+        """Verify that subject query results are correct and complete"""
+        sparql = connect_sparql()
+        id = 'http://localhost/skmf#admin'
+        result = sparql.query_subject(id)
+        self.assertEqual(len(result['results']['bindings']), 0)
+        graphs = ['users']
+        result = sparql.query_subject(id, *graphs)
+        self.assertNotEqual(len(result['results']['bindings']), 0)
+        result = sparql.query_subject('bob', *graphs)
+        self.assertEqual(len(result['results']['bindings']), 0)
+        graphs.append('bob')
+        result = sparql.query_subject(id, *graphs)
+        self.assertNotEqual(len(result['results']['bindings']), 0)
+        graphs.remove('users')
+        result = sparql.query_subject(id, *graphs)
+        self.assertEqual(len(result['results']['bindings']), 0)
+
+    def test_resource_object(self):
+        """Verify that subject query results are correct and complete"""
+        value = 'some value'
+        type = 'literal'
+        datatype = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral'
+        xmllang = 'en-US'
+        set = {'value': value, 'type': type, 'datatype': datatype, 'xmllang': xmllang}
+        zero = RDFObject(value = value, type = type)
+        self.assertEqual(zero.value, value)
+        self.assertEqual(zero.type, type)
+        self.assertIsNone(zero.datatype)
+        self.assertIsNone(zero.xmllang)
+        one = RDFObject(**set)
+        self.assertEqual(one.value, value)
+        self.assertEqual(one.type, type)
+        self.assertEqual(one.datatype, datatype)
+        self.assertEqual(one.xmllang, xmllang.lower())
+        uno = RDFObject(**set)
+        self.assertEqual(uno.value, value)
+        self.assertEqual(uno.type, type)
+        self.assertEqual(uno.datatype, datatype)
+        self.assertEqual(uno.xmllang, xmllang.lower())
+        self.assertEqual(one, uno)
+        self.assertNotEqual(one, zero)
+
+    def test_resource_subject(self):
+        """Verify that subject query results are correct and complete"""
+
+    def test_resource_user(self):
+        """Verify that subject query results are correct and complete"""
+
+    @unittest.skip('Only running backend tests')
     def test_views_get_responses(self):
         self.assert200(self.client.get(url_for('show_tags')))
         self.assertTemplateUsed('show_tags.html')
@@ -75,7 +126,7 @@ class FlaskTestCase(BaseTestCase):
         response = self.client.get(url_for('show_users'))
         self.assertRedirects(response, url_for('login') + '?next=%2Fusers')
 
-#    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
+    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
     def test_login_logout(self):
         with self.client:
             self.assertTrue(current_user.is_anonymous)
@@ -91,7 +142,7 @@ class FlaskTestCase(BaseTestCase):
             self.assertTrue(current_user.is_anonymous)
             self.assertIn('You were logged out', response.data.decode('utf-8'))
 
-#    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
+    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
     def test_login_invalid(self):
         with self.client:
             response = self.login('Admin', 'default', True)
@@ -104,7 +155,7 @@ class FlaskTestCase(BaseTestCase):
             self.assertIn('Invalid username or password',
                           response.data.decode('utf-8'))
 
-#    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
+    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
     def test_view_restricted(self):
         """Verify view behavior when user is not logged in"""
         with self.client:
