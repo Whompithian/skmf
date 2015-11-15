@@ -12,13 +12,13 @@ Classes:
 
 import unittest
 
-from flask import url_for
+from flask import Flask, url_for
 from flask.ext.bcrypt import Bcrypt
 from flask.ext.login import current_user
 from flask.ext.testing import TestCase
 
-from skmf import app, connect_sparql
-from skmf.resource import RDFObject
+from skmf import connect_sparql, g
+from skmf.resource import RDFObject, RDFObjectError, Subject
 import skmf.i18n.en_US as uiLabel
 
 
@@ -38,9 +38,13 @@ class BaseTestCase(TestCase):
     """
 
     def create_app(self):
+        app = Flask(__name__)
         app.config.from_envvar('FLASK_SETTINGS', silent=False)
         self.bcrypt = Bcrypt(app)
         return app
+
+    def setUp(self):
+        g.sparql = connect_sparql()
 
     def login(self, username, password, follow_redirects = False):
         return self.client.post(url_for('login'), data=dict(
@@ -66,36 +70,43 @@ class FlaskTestCase(BaseTestCase):
     """
 
     def test_sparql_query_subject(self):
-        """Verify that subject query results are correct and complete"""
-        sparql = connect_sparql()
+        """Verify that subject query results are correct and complete."""
+#        sparql = connect_sparql()
         id = 'http://localhost/skmf#admin'
-        result = sparql.query_subject(id)
+        subject = 'http://localhost/skmf#User'
+        result = g.sparql.query_subject(id)
         self.assertEqual(len(result['results']['bindings']), 0)
-        graphs = ['users']
-        result = sparql.query_subject(id, *graphs)
+        result = g.sparql.query_subject(subject)
         self.assertNotEqual(len(result['results']['bindings']), 0)
-        result = sparql.query_subject('bob', *graphs)
+        graphs = ['users']
+        result = g.sparql.query_subject(id, *graphs)
+        self.assertNotEqual(len(result['results']['bindings']), 0)
+        result = g.sparql.query_subject(subject, *graphs)
+        self.assertNotEqual(len(result['results']['bindings']), 0)
+        result = g.sparql.query_subject('bob', *graphs)
         self.assertEqual(len(result['results']['bindings']), 0)
         graphs.append('bob')
-        result = sparql.query_subject(id, *graphs)
+        result = g.sparql.query_subject(id, *graphs)
         self.assertNotEqual(len(result['results']['bindings']), 0)
         graphs.remove('users')
-        result = sparql.query_subject(id, *graphs)
+        result = g.sparql.query_subject(id, *graphs)
         self.assertEqual(len(result['results']['bindings']), 0)
 
     def test_resource_object(self):
-        """Verify that subject query results are correct and complete"""
+        """Verify that RDF objects are properly defined."""
         value = 'some value'
         type = 'literal'
         datatype = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral'
         xmllang = 'en-US'
         set = {'value': value, 'type': type, 'datatype': datatype, 'xmllang': xmllang}
-        zero = RDFObject(value = value, type = type)
-        self.assertEqual(zero.value, value)
-        self.assertEqual(zero.type, type)
-        self.assertIsNone(zero.datatype)
-        self.assertIsNone(zero.xmllang)
-        one = RDFObject(**set)
+        with self.assertRaises(RDFObjectError):
+            RDFObject(value=None, type=None, datatype=datatype, xmllang=xmllang)
+        half = RDFObject(value = value, type = type)
+        self.assertEqual(half.value, value)
+        self.assertEqual(half.type, type)
+        self.assertIsNone(half.datatype)
+        self.assertIsNone(half.xmllang)
+        one = RDFObject(value=value, type=type, datatype=datatype, xmllang=xmllang)
         self.assertEqual(one.value, value)
         self.assertEqual(one.type, type)
         self.assertEqual(one.datatype, datatype)
@@ -106,13 +117,42 @@ class FlaskTestCase(BaseTestCase):
         self.assertEqual(uno.datatype, datatype)
         self.assertEqual(uno.xmllang, xmllang.lower())
         self.assertEqual(one, uno)
-        self.assertNotEqual(one, zero)
+        self.assertNotEqual(one, half)
 
     def test_resource_subject(self):
-        """Verify that subject query results are correct and complete"""
+        """Verify that RDF subjects are properly defined and behaved."""
+        id = 'http://localhost/skmf#User'
+        labelkey = 'http://www.w3.org/2000/01/rdf-schema#label'
+        missing = 'http://localhost/skmf#undefined'
+        rdfobject = RDFObject(value='Gone', type='literal', datatype=None, xmllang='en-us')
+        subject = Subject(id)
+        self.assertEqual(subject.id, id)
+        self.assertIn(labelkey, subject.data)
+        clone = Subject(subject.id, **subject.data)
+        self.assertEqual(subject.id, clone.id)
+        for key in subject.data:
+            self.assertEqual(subject.data[key], clone.data[key])
+        subject = Subject(missing)
+        self.assertEqual(subject.id, missing)
+        self.assertEqual(len(subject.data), 0)
+        self.assertNotIn('miss', subject.graphs)
+        subject.add_graph('miss')
+        self.assertIn('miss', subject.graphs)
+        subject.remove_graph('miss')
+        self.assertNotIn('miss', subject.graphs)
+        subject.add_data(**{labelkey: [rdfobject]})
+        self.assertIn(labelkey, subject.data)
+        self.assertIn(rdfobject, subject.data[labelkey])
+        clone = Subject(subject.id)
+        self.assertIn(labelkey, clone.data)
+        self.assertIn(rdfobject, clone.data[labelkey])
+        subject.remove_data(**{labelkey: [rdfobject]})
+        self.assertNotIn(labelkey, subject.data)
+        clone = Subject(subject.id)
+        self.assertNotIn(labelkey, clone.data)
 
     def test_resource_user(self):
-        """Verify that subject query results are correct and complete"""
+        """Verify that Users are properly defined and behaved."""
 
     @unittest.skip('Only running backend tests')
     def test_views_get_responses(self):
@@ -157,7 +197,7 @@ class FlaskTestCase(BaseTestCase):
 
     @unittest.skip('Bypass slow BCrypt functions to speed other tests')
     def test_view_restricted(self):
-        """Verify view behavior when user is not logged in"""
+        """Verify view behavior when user is not logged in."""
         with self.client:
             response = self.client.post(url_for('add_tag'), data=dict(
                 label='Label',
