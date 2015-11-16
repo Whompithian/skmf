@@ -21,6 +21,33 @@ User -- Representation of a user of SKMF, made persistent in a SPARQL endpoint.
 from skmf import app, g
 
 
+class Query(object):
+
+    def __init__(self, *args, **kwargs):
+        if args:
+            self.graphs = args
+        else:
+            self.graphs = []
+        if kwargs:
+            self.constraints = {}
+        else:
+            self.constraints = {'labels': [], 'terms': {}}
+
+    def add_graph(self, graph):
+        if graph not in self.graphs:
+            self.graphs.append(graph)
+
+    def remove_graph(self, graph):
+        while graph in self.graphs:
+            self.graphs.remove(graph)
+
+    def add_constraint(self, *args, **kwargs):
+        pass
+
+    def remove_constraint(self, *args, **kwargs):
+        pass
+
+
 class Subject(object):
 
     def __init__(self, id, *args, **kwargs):
@@ -38,20 +65,19 @@ class Subject(object):
             if 'results' in kwargs:
                 for result in kwargs['results']['bindings']:
                     predicate = result['p']['value']
-                    rdfobject = RDFObject(**result['o'])
+                    rdfobject = result['o']
+                    value = {'type': 'uri', 'value': [rdfobject]}
                     if predicate not in self.data:
-                        self.data[predicate] = [rdfobject]
-                    elif rdfobject not in self.data[predicate]:
-                        self.data[predicate].append(rdfobject)
+                        self.data[predicate] = value
+                    elif rdfobject not in self.data[predicate]['value']:
+                        self.data[predicate]['value'].append(rdfobject)
             else:
-                for key in kwargs:
-                    for value in kwargs[key]:
-                        if not isinstance(value, RDFObject):
-                            value = RDFObject(**value)
-                        if key not in self.data:
-                            self.data[key] = [value]
-                        elif value not in self.data[key]:
-                            self.data[key].append(value)
+                for predicate in kwargs['value']:
+                    for rdfobject in kwargs['value'][predicate]['value']:
+                        if predicate not in self.data:
+                            self.data[predicate] = kwargs['value'][predicate]
+                        elif rdfobject not in self.data[predicate]['value']:
+                            self.data[predicate]['value'].append(rdfobject)
 
     def add_graph(self, graph):
         if graph not in self.graphs:
@@ -62,7 +88,6 @@ class Subject(object):
             self.graphs.remove(graph)
 
     def add_data(self, *args, **kwargs):
-        success = False
         graphs = []
         new_data = {}
         for graph in args:
@@ -70,25 +95,22 @@ class Subject(object):
                 graphs.append(graph)
         for predicate in kwargs:
             if predicate not in self.data and len(predicate) > 0:
-                self.data[predicate] = kwargs[predicate]
-                new_data[predicate] = kwargs[predicate]
+                value = {'type': 'uri', 'value': kwargs[predicate]}
+                self.data[predicate] = value
+                new_data[predicate] = value
             else:
-                new_data[predicate] = []
-                print(kwargs[predicate])
+                new_data[predicate] = {'type': 'uri', 'value': []}
                 for rdfobject in kwargs[predicate]:
-                    if rdfobject not in self.data[predicate]:
-                        self.data[predicate].append(rdfobject)
-                        new_data[predicate].append(rdfobject)
-            if len(new_data[predicate]) == 0:
+                    if rdfobject not in self.data[predicate]['value']:
+                        self.data[predicate]['value'].append(rdfobject)
+                        new_data[predicate]['value'].append(rdfobject)
+            if len(new_data[predicate]['value']) == 0:
                 del new_data[predicate]
         if len(new_data) > 0:
-            record = {self.id: new_data}
-            print(record)
+            record = {self.id: {'type': 'uri', 'value': new_data}}
             g.sparql.insert(*graphs, **record)
-        return success
 
     def remove_data(self, *args, **kwargs):
-        success = False
         graphs = []
         old_data = {}
         for graph in args:
@@ -96,19 +118,18 @@ class Subject(object):
                 graphs.append(graph)
         for predicate in kwargs:
             if predicate in self.data:
-                old_data[predicate] = []
+                old_data[predicate] = {'type': 'uri', 'value': []}
                 for rdfobject in kwargs[predicate]:
-                    if rdfobject in self.data[predicate]:
-                        self.data[predicate].remove(rdfobject)
-                        old_data[predicate].append(rdfobject)
-                if len(self.data[predicate]) == 0:
+                    if rdfobject in self.data[predicate]['value']:
+                        self.data[predicate]['value'].remove(rdfobject)
+                        old_data[predicate]['value'].append(rdfobject)
+                if len(self.data[predicate]['value']) == 0:
                     del self.data[predicate]
-                if len(old_data[predicate]) == 0:
+                if len(old_data[predicate]['value']) == 0:
                     del old_data[predicate]
         if len(old_data) > 0:
-            record = {self.id: old_data}
-            success = g.sparql.delete(*graphs, **record)
-        return success
+            record = {self.id: {'type': 'uri', 'value': old_data}}
+            g.sparql.delete(*graphs, **record)
 
     def update_data(self, *args, **kwargs):
         g.sparql.update(*args, **kwargs)
@@ -158,53 +179,18 @@ class User(Subject):
 
     def set_hash(self, hashpass):
         value = hashpass.decode('utf-8')
-        hashobject = RDFObject(value=value, type='literal')
+        hashobject = {'value': value, 'type': 'literal'}
         kwargs = {User.hashkey: hashobject}
-        success = self.set_values(append=False, **kwargs) == 1
+        success = self.set_values(**kwargs) == 1
         if success:
             self.write()
         return success
 
     def set_name(self, name):
-        nameobject = RDFObject(value=name, type='literal')
+        nameobject = {'value': name, 'type': 'literal'}
         kwargs = {User.namekey: nameobject}
         success = self.set_values(append=False, **kwargs) == 1
         if success:
             self.write()
         return success
 
-
-class RDFObject(object):
-
-    def __init__(self, **kwargs):
-        self.datatype = None
-        self.xmllang = None
-        try:
-            self.value = kwargs['value']
-            self.type = kwargs['type']
-        except KeyError:
-            raise RDFObjectError('type and value both required')
-        if not self.value or not self.type:
-            raise RDFObjectError('type and value both required')
-        if 'datatype' in kwargs:
-            self.datatype = kwargs['datatype']
-        if 'xml:lang' in kwargs:
-            self.xmllang = kwargs['xml:lang'].lower()
-        elif 'xmllang' in kwargs:
-            self.xmllang = kwargs['xmllang'].lower()
-
-    def __eq__(self, other):
-        if isinstance(other, RDFObject):
-            return self.value == other.value and self.type == other.type and self.datatype == other.datatype and self.xmllang == other.xmllang
-        return NotImplemented
-
-    def __repr__(self):
-        data = {'value': self.value, 'type': self.type, 'datatype': self.datatype, 'xmllang': self.xmllang}
-        return data.__repr__()
-
-
-class RDFObjectError(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-    def __str__(self):
-        return repr(self.msg)

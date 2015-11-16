@@ -18,7 +18,7 @@ from flask.ext.login import current_user
 from flask.ext.testing import TestCase
 
 from skmf import connect_sparql, g
-from skmf.resource import RDFObject, RDFObjectError, Subject
+from skmf.resource import Subject
 import skmf.i18n.en_US as uiLabel
 
 
@@ -71,7 +71,6 @@ class FlaskTestCase(BaseTestCase):
 
     def test_sparql_query_subject(self):
         """Verify that subject query results are correct and complete."""
-#        sparql = connect_sparql()
         id = 'http://localhost/skmf#admin'
         subject = 'http://localhost/skmf#User'
         result = g.sparql.query_subject(id)
@@ -92,46 +91,19 @@ class FlaskTestCase(BaseTestCase):
         result = g.sparql.query_subject(id, *graphs)
         self.assertEqual(len(result['results']['bindings']), 0)
 
-    def test_resource_object(self):
-        """Verify that RDF objects are properly defined."""
-        value = 'some value'
-        type = 'literal'
-        datatype = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral'
-        xmllang = 'en-US'
-        set = {'value': value, 'type': type, 'datatype': datatype, 'xmllang': xmllang}
-        with self.assertRaises(RDFObjectError):
-            RDFObject(value=None, type=None, datatype=datatype, xmllang=xmllang)
-        half = RDFObject(value = value, type = type)
-        self.assertEqual(half.value, value)
-        self.assertEqual(half.type, type)
-        self.assertIsNone(half.datatype)
-        self.assertIsNone(half.xmllang)
-        one = RDFObject(value=value, type=type, datatype=datatype, xmllang=xmllang)
-        self.assertEqual(one.value, value)
-        self.assertEqual(one.type, type)
-        self.assertEqual(one.datatype, datatype)
-        self.assertEqual(one.xmllang, xmllang.lower())
-        uno = RDFObject(**set)
-        self.assertEqual(uno.value, value)
-        self.assertEqual(uno.type, type)
-        self.assertEqual(uno.datatype, datatype)
-        self.assertEqual(uno.xmllang, xmllang.lower())
-        self.assertEqual(one, uno)
-        self.assertNotEqual(one, half)
-
     def test_resource_subject(self):
         """Verify that RDF subjects are properly defined and behaved."""
         id = 'http://localhost/skmf#User'
         labelkey = 'http://www.w3.org/2000/01/rdf-schema#label'
         missing = 'http://localhost/skmf#undefined'
-        rdfobject = RDFObject(value='Gone', type='literal', datatype=None, xmllang='en-us')
+        rdfobject = {'value': 'Gone', 'type': 'literal', 'xml:lang': 'en-us'}
         subject = Subject(id)
         self.assertEqual(subject.id, id)
         self.assertIn(labelkey, subject.data)
-        clone = Subject(subject.id, **subject.data)
+        clone = Subject(subject.id, **{'type': 'uri', 'value': subject.data})
         self.assertEqual(subject.id, clone.id)
-        for key in subject.data:
-            self.assertEqual(subject.data[key], clone.data[key])
+        for predicate in subject.data:
+            self.assertEqual(subject.data[predicate], clone.data[predicate])
         subject = Subject(missing)
         self.assertEqual(subject.id, missing)
         self.assertEqual(len(subject.data), 0)
@@ -142,10 +114,10 @@ class FlaskTestCase(BaseTestCase):
         self.assertNotIn('miss', subject.graphs)
         subject.add_data(**{labelkey: [rdfobject]})
         self.assertIn(labelkey, subject.data)
-        self.assertIn(rdfobject, subject.data[labelkey])
+        self.assertIn(rdfobject, subject.data[labelkey]['value'])
         clone = Subject(subject.id)
         self.assertIn(labelkey, clone.data)
-        self.assertIn(rdfobject, clone.data[labelkey])
+        self.assertIn(rdfobject, clone.data[labelkey]['value'])
         subject.remove_data(**{labelkey: [rdfobject]})
         self.assertNotIn(labelkey, subject.data)
         clone = Subject(subject.id)
