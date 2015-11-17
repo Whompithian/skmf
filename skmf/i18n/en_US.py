@@ -1,4 +1,7 @@
 ISOCode                 = 'en-US'
+errorSparqlQueryObject = 'bad object definition'
+errorSparqlQueryPred = 'bad predicate definition'
+errorSpqrqlQuerySubject = 'bad subject definition'
 formCreateUserConfError = 'Passwords differ'
 formCreateUserConfTitle = 'Confirm password:'
 formCreateUserLenError1 = 'Password must contain at least'

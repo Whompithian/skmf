@@ -12,10 +12,12 @@ Classes:
 SPARQLER -- An extension of SPARQLWrapper to handle special cases for SKMF.
 """
 
-from SPARQLWrapper import JSON, POST, SPARQLExceptions, SPARQLWrapper
+from SPARQLWrapper import JSON, POST, SPARQLWrapper
+from SPARQLWrapper.SPARQLExceptions import EndPointInternalError, \
+                                           EndPointNotFound, QueryBadFormed
 
 from skmf import app
-from skmf.i18n.en_US import ISOCode
+import skmf.i18n.en_US as uiLabel
 
 class SPARQLER(SPARQLWrapper):
     """Extend SPARQLWrapper to handle special cases for the SKMF package.
@@ -35,92 +37,92 @@ class SPARQLER(SPARQLWrapper):
                                        returnFormat=returnFormat,
                                        defaultGraph=defaultGraph)
 
-    def _set_graphs(self, *args):
+    def _set_graphs(self, graphlist = []):
         graphs = 'FROM <{namespace}>'.format(namespace=app.config['NAMESPACE'])
-        for graph in args:
+        for graph in graphlist:
             graph = app.config['NAMESPACE'] + '/' + graph
             graphs += '\nFROM <{graph}>'.format(graph=graph)
         return graphs
 
-    def _format_body(self, **kwargs):
+    def _set_labels(self, labellist = []):
+        if len(labellist) == 0:
+            labels = ' *'
+        else:
+            labels = ''
+            for label in labellist:
+                labels += ' ?{}'.format(label)
+        return labels
+
+    def _format_body(self, subjectlist = {}):
         body = ''
-        numsubjects = len(kwargs)
+        numsubjects = len(subjectlist)
         subjectindex = 0
-        for subject in kwargs:
+        for subject in subjectlist:
             subjectindex += 1
-            try:
-                # period marks the end of a single subject match
-                body += self._format_subject(subject, **kwargs[subject]) + ' .'
-                if subjectindex < numsubjects:
-                    # set each subject on its own line for readability of query
-                    body += '\n'
-            except KeyError:
-                raise SPARQLExceptions.QueryBadFormed('subject must have value')
+            # period marks the end of a single subject match
+            body += self._format_subject(subject, subjectlist[subject]) + ' .'
+            if subjectindex < numsubjects:
+                # set each subject on its own line for readability of query
+                body += '\n'
         return body
 
-    def _format_subject(self, subject, **kwargs):
-        numpreds = len(kwargs['value'])
+    def _format_subject(self, subject, predlist = {}):
+        numpreds = len(predlist['value'])
         predindex = 0
         try:
-            if kwargs['type'] == 'uri':
+            if predlist['type'] == 'uri':
                 body = '<{}> '.format(subject)
             else:
                 body = '?{} '.format(subject)
-            for predicate in kwargs['value']:
+            for predicate in predlist['value']:
                 predindex += 1
-                body += self._format_predicate(predicate, **kwargs['value'][predicate])
+                body += self._format_predicate(predicate, predlist['value'][predicate])
                 if predindex < numpreds:
                     # semicolon between objects and predicates, none at end
                     body += ' ; '
         except KeyError:
-            raise SPARQLExceptions.QueryBadFormed('bad subject definition')
+            raise QueryBadFormed(uiLabel.errorSpqrqlQuerySubject)
         return body
 
-    def _format_predicate(self, predicate, **kwargs):
+    def _format_predicate(self, predicate, objectlist = {}):
         try:
-            if kwargs['type'] == 'uri':
+            if objectlist['type'] == 'uri':
                 body = '<{}> '.format(predicate)
             else:
                 body = '?{} '.format(predicate)
-            rdfobjects = kwargs['value']
+            rdfobjects = objectlist['value']
             numobjects = len(rdfobjects)
             objectindex = 0
             for rdfobject in rdfobjects:
                 objectindex += 1
-                body += self._format_object(**rdfobject)
+                body += self._format_object(rdfobject)
                 if objectindex < numobjects:
                     # comma between consecutive objects, none at end
                     body += ' , '
         except KeyError:
-            raise SPARQLExceptions.QueryBadFormed('bad predicate definition')
+            raise QueryBadFormed(uiLabel.errorSparqlQueryPred)
         return body
 
-    def _format_object(self, **kwargs):
+    def _format_object(self, rdfobject = {}):
         try:
-            if kwargs['type'] == 'uri':
-                body = '<{}>'.format(kwargs['value'])
-            elif kwargs['type'] == 'label':
-                body = '?{}'.format(kwargs['value'])
+            if rdfobject['type'] == 'uri':
+                body = '<{}>'.format(rdfobject['value'])
+            elif rdfobject['type'] == 'label':
+                body = '?{}'.format(rdfobject['value'])
             else:
-                body = '"{}"'.format(kwargs['value'])
-                if 'xml:lang' in kwargs:
-                    body += '@{}'.format(kwargs['xml:lang'].lower())
+                body = '"{}"'.format(rdfobject['value'])
+                if 'xml:lang' in rdfobject:
+                    body += '@{}'.format(rdfobject['xml:lang'].lower())
         except KeyError:
-            # query bad formed, not recoverable
-            raise SPARQLExceptions.QueryBadFormed('bad object definition')
+            raise QueryBadFormed(uiLabel.errorSparqlQueryObject)
         return body
 
-    def query_general(self, *args, **kwargs):
+    def query_general(self, graphlist = [], labellist = [], subjectlist = {}):
         """Return the results of an arbitrarily complex query."""
-        graphs = self._set_graphs(*args)
-        labels = ''
-        if 'labels' not in kwargs:
-            raise SPARQLExceptions.QueryBadFormed('select requires labels')
-        for label in kwargs['labels']:
-            labels += ' ?' + label
-        if 'terms' not in kwargs:
-            raise SPARQLExceptions.QueryBadFormed('select requires labels')
-        body = self._format_body(**kwargs['terms'])
+        prefix = app.config['PREFIXES']
+        graphs = self._set_graphs(graphlist)
+        labels = self._set_labels(labellist)
+        body = self._format_body(subjectlist)
         queryString = """
         {prefix}
         SELECT DISTINCT{labels}
@@ -128,17 +130,17 @@ class SPARQLER(SPARQLWrapper):
         WHERE {{
           {body}
         }}
-        """.format(prefix=app.config['PREFIXES'], labels=labels, graphs=graphs, body=body)
+        """.format(prefix=prefix, labels=labels, graphs=graphs, body=body)
         self.setQuery(queryString)
         print(queryString)
         try:
             return self.queryAndConvert()
-        except SPARQLExceptions.EndPointNotFound as d:
-            return d.msg
-        except SPARQLExceptions.QueryBadFormed as e:
-            return e.msg
-        except SPARQLExceptions.EndPointInternalError as f:
-            return f.msg
+        except EndPointNotFound:
+            raise
+        except QueryBadFormed:
+            raise
+        except EndPointInternalError:
+            raise
 
     def query_user(self, id):
         """Returns the values of a User in the SPARQL endpoint."""
@@ -157,28 +159,27 @@ class SPARQLER(SPARQLWrapper):
         self.setQuery(queryString)
         try:
             return self.queryAndConvert()
-        except SPARQLExceptions.EndPointNotFound as d:
-            return d.msg
-        except SPARQLExceptions.QueryBadFormed as e:
-            return e.msg
-        except SPARQLExceptions.EndPointInternalError as f:
-            return f.msg
+        except EndPointNotFound:
+            raise
+        except QueryBadFormed:
+            raise
+        except EndPointInternalError:
+            raise
 
-    def query_subject(self, id, *args):
+    def query_subject(self, id, type = 'uri', graphlist = []):
         """Return all predicates and objects of the subject having id."""
-        rdfobject = {'value': 'o', 'type': 'label'}
+        rdfobject = {'type': 'label', 'value': 'o'}
         predicate = {'p': {'type': 'label', 'value': [rdfobject]}}
-        subject = {id: {'type': 'uri', 'value': predicate}}
-        query = {'labels': ['p', 'o'], 'terms': subject}
-        return self.query_general(*args, **query)
+        subject = {id: {'type': type, 'value': predicate}}
+        labels = ['p', 'o']
+        return self.query_general(graphlist, labels, subject)
 
-    def insert(self, *args, **kwargs):
-        graphs = []
-        if args:
-            graphs = args
+    def insert(self, graphlist = [], subjectlist = {}):
+        prefix = app.config['PREFIXES']
+        graphs = graphlist
         if '' not in graphs:
             graphs.append('')
-        body = self._format_body(**kwargs)
+        body = self._format_body(subjectlist)
         for graph in graphs:
             if graph == '':
                 graph = app.config['NAMESPACE']
@@ -191,18 +192,18 @@ class SPARQLER(SPARQLWrapper):
                 {body}
               }}
             }}
-            """.format(prefix=app.config['PREFIXES'], graph=graph, body=body)
+            """.format(prefix=prefix, graph=graph, body=body)
             print(queryString)
             self.setQuery(queryString)
             self.setMethod(POST)
             try:
                 self.query()
-            except SPARQLExceptions.EndPointNotFound as d:
-                print(d.msg)
-            except SPARQLExceptions.QueryBadFormed as e:
-                print(e.msg)
-            except SPARQLExceptions.EndPointInternalError as f:
-                print(f.msg)
+            except EndPointNotFound:
+                raise
+            except QueryBadFormed:
+                raise
+            except EndPointInternalError:
+                raise
 
     def sparql_insert(self, label, desc):
         """STUB: Insert new data into a SPARQL endpoint."""
@@ -210,28 +211,27 @@ class SPARQLER(SPARQLWrapper):
         queryString = """
         {prefix}
         INSERT DATA {{
-          skmf:{subject} rdfs:label "{label}"@{iso} ;
-                         rdfs:comment "{desc}"@{iso} .
+          skmf:{subject} rdfs:label "{label}"@en-us ;
+                         rdfs:comment "{desc}"@en-us .
         }}
         """.format(prefix=app.config['PREFIXES'],
-                   subject=subject, label=label, desc=desc, iso=ISOCode)
+                   subject=subject, label=label, desc=desc)
         self.setQuery(queryString)
         try:
             self.query()
-        except SPARQLExceptions.EndPointNotFound as d:
-            return d.msg
-        except SPARQLExceptions.QueryBadFormed as e:
-            return e.msg
-        except SPARQLExceptions.EndPointInternalError as f:
-            return f.msg
+        except EndPointNotFound:
+            raise
+        except QueryBadFormed:
+            raise
+        except EndPointInternalError:
+            raise
 
-    def delete(self, *args, **kwargs):
-        graphs = []
-        if args:
-            graphs = args
+    def delete(self, graphlist = [], subjectlist = {}):
+        prefix = app.config['PREFIXES']
+        graphs = graphlist
         if '' not in graphs:
             graphs.append('')
-        body = self._format_body(**kwargs)
+        body = self._format_body(subjectlist)
         for graph in graphs:
             if graph == '':
                 graph = app.config['NAMESPACE']
@@ -244,18 +244,18 @@ class SPARQLER(SPARQLWrapper):
                 {body}
               }}
             }}
-            """.format(prefix=app.config['PREFIXES'], graph=graph, body=body)
+            """.format(prefix=prefix, graph=graph, body=body)
             print(queryString)
             self.setQuery(queryString)
             self.setMethod(POST)
             try:
                 self.query()
-            except SPARQLExceptions.EndPointNotFound as d:
-                print(d.msg)
-            except SPARQLExceptions.QueryBadFormed as e:
-                print(e.msg)
-            except SPARQLExceptions.EndPointInternalError as f:
-                print(f.msg)
+            except EndPointNotFound:
+                raise
+            except QueryBadFormed:
+                raise
+            except EndPointInternalError:
+                raise
 
     def sparql_delete(endpoint, label):
         """STUB: Delete the specified data from a SPARQL endpoint."""
@@ -273,9 +273,9 @@ class SPARQLER(SPARQLWrapper):
         endpoint.setQuery(queryString)
         try:
             endpoint.query()
-        except SPARQLExceptions.EndPointNotFound as d:
-            return d.msg
-        except SPARQLExceptions.QueryBadFormed as e:
-            return e.msg
-        except SPARQLExceptions.EndPointInternalError as f:
-            return f.msg
+        except EndPointNotFound:
+            raise
+        except QueryBadFormed:
+            raise
+        except EndPointInternalError:
+            raise
