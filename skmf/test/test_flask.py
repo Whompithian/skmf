@@ -32,7 +32,7 @@ class BaseTestCase(TestCase):
     the Flask app.
     
     Methods:
-        create_app -- Setup the Flask app and set commonly needed parameters
+        create_app -- Setup the Flask app and set commonly needed parameters.
         login -- Obtain a user session through the login view.
         logout -- Clear a user session through the logout view.
     """
