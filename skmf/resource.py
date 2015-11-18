@@ -25,6 +25,11 @@ from skmf import app, g
 class Query(object):
     """Components of a free-form SPARQL query or update request.
     
+    Attributes:
+        graphs -- List of graphs in which to scope queries.
+        labels -- List of header labels expected to be returned in a query.
+        subjects -- Dictionary of triples to describe the query.
+    
     Methods:
         add_constraint -- Refine a query with placeholders and relationships.
         add_graph -- Append a graph to include in queries.
@@ -60,6 +65,12 @@ class Query(object):
 class Subject(object):
     """JSON/TTL-like serialization of a subject described in RDF.
     
+    Attributes:
+        str:id -- URI or label that identifies this Subject in a query.
+        str:type -- How to interpret the id, one of 'uri', 'label', or 'NONE'
+        graphs -- List of graphs in which to scope queries for this Subject.
+        preds -- Dictionary of predicates and objects describing this Subject.
+    
     Methods:
         add_data -- Add triples to the triplestore using this subject.
         add_graph -- Append to the list of graphs to query.
@@ -74,8 +85,8 @@ class Subject(object):
         """Setup using defaults, provided values, or from the triplestore.
         
         Params:
-            str: id -- Unique value to identify this subject in a triplestore.
-            str: type -- 'uri' for known values or 'label' for a placeholder.
+            str:id -- Unique value to identify this subject in a triplestore.
+            str:type -- 'uri' for known values or 'label' for a placeholder.
             graphlist -- List of named graphs to which a subject belongs.
             predlist -- Descriptive predicates and their associated objects.
         """
@@ -92,7 +103,7 @@ class Subject(object):
         """Returns all triples about this subject from a triplestore.
         
         Params:
-            results: JSON formatted results of a SPARQL query for one subject.
+            results -- JSON formatted results of SPARQL query for one subject.
         Returns:
             A graph containing descriptive predicates and associated objects.
         """
@@ -116,7 +127,7 @@ class Subject(object):
         """Append a graph to the list of graphs to query for this subject.
         
         Params:
-            str: graph -- Short name of a named graph in the triplestore.
+            str:graph -- Short name of a named graph in the triplestore.
         """
         if graph not in self.graphs:
             self.graphs.append(graph)
@@ -125,7 +136,7 @@ class Subject(object):
         """Remove a graph from the list of graphs to query for this subject.
         
         Params:
-            str: graph -- Short name of a named graph in the triplestore.
+            str:graph -- Short name of a named graph in the triplestore.
         """
         while graph in self.graphs:
             self.graphs.remove(graph)
@@ -224,44 +235,74 @@ class Subject(object):
 
 
 class User(Subject):
-    """Wrapper around a subject for use in front-ends with user sessions."""
+    """Wrapper around a subject for use in front-ends with user sessions.
+    
+    Hold user identifiers and access rights. This class assumes that user data will be kept in a triplestore alongside other data. User data should be considered sensitive. Passwords should be hashed before they are passed to the User object, preferably with an algorithm that is meant for securely hashing passwords. Other fields may have encrypted values passed to them, so long as the encoding of those values can be read by the attached SPARQL endpoint. id must be a unicode string and it must be unique for each user. Since this system does not allow users to authenticate anonymously, a User must have a hashpass value.
+    
+    Attributes:
+        str:username -- Name portion of the subject id.
+        bool:authenticated -- State of authentication for login sessions.
+    
+    Methods:
+        get -- Return a User from the triplestore from id, or None.
+        get_hash -- Return byte-string of a user's password hash.
+        get_id -- Return the unique username of a user.
+        get_name -- Return the display name of a user.
+        is_active -- Return True if the user is active, False otherwise.
+        is_anonymous -- Return False; not used, but needed for Flask-Login.
+        is_authenticated -- Return true if user authenticated, False otherwise.
+        set_hash -- Replace the existing password hash with a new one.
+        set_name -- Replace the exisitng display name with a new one.
+    """
 
     actkey  = app.config['NAMESPACE'] + 'active'
+    """str: Hashable URL of the 'active' predicate for user active state."""
     hashkey = app.config['NAMESPACE'] + 'hashpass'
+    """str: Hashable URL of the 'hashPass' predicate for hashed passwords."""
     namekey = 'http://xmlns.com/foaf/0.1/name'
+    """str: Hashable URL of the 'name' predicate for user display name."""
 
-    def __init__(self, username, **kwargs):
+    def __init__(self, username, predlist = {}):
+        """"""
         #b'$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.'
         graph = ['users']
-        super(User, self).__init__(id=app.config['NAMESPACE']+username, *graph, **kwargs)
+        super(User, self).__init__(id=app.config['NAMESPACE']+username, graphlist=graph, predlist=predlist)
         self.username      = username
         self.authenticated = False
 
-    def get(id):
-        user = User(id)
-        if User.hashkey in user.data:
+    def get(username):
+        """Return a User from the triplestore from id, or None."""
+        user = User(username)
+        if User.hashkey in user.preds:
             return user
         return None
 
     def is_authenticated(self):
+        """Return true if user authenticated, False otherwise."""
         return self.authenticated
 
     def is_active(self):
+        """Return True if the user is active, False otherwise."""
         return self.preds[User.actkey] == 'Y'
 
     def is_anonymous(self):
+        """Return False; not used, but needed for Flask-Login."""
         return False
 
     def get_id(self):
+        """Return the unique username of a user."""
         return self.username
 
     def get_hash(self):
+        """Return byte-string of a user's password hash."""
         return self.preds[User.hashkey].encode()
 
     def get_name(self):
+        """Return the display name of a user."""
         return self.preds[User.namekey]
 
     def set_hash(self, hashpass):
+        """Replace the existing password hash with a new one."""
         value = hashpass.decode('utf-8')
         hashobject = {'value': value, 'type': 'literal'}
         kwargs = {User.hashkey: hashobject}
@@ -271,6 +312,7 @@ class User(Subject):
         return success
 
     def set_name(self, name):
+        """Replace the exisitng display name with a new one."""
         nameobject = {'value': name, 'type': 'literal'}
         kwargs = {User.namekey: nameobject}
         success = self.set_values(append=False, **kwargs) == 1
