@@ -3,9 +3,9 @@
 This module holds classes that model RDF triples and SPARQL queries. The structure of the primary data element of most classes is a dict modeled after the JSON response format for SPARQL, but with reduced redundancy inspired by the Turtle format for RDF serialization. The structure allows for valid triples and query elements with placeholders to coexist and exchange components. Most of these components are directly passable to the 'sparqler' module. ACCESS controls will be implemented using graphs as ACLs, but this is proving tricky.
 
 Classes:
-Query -- Representation of a free-form SPARQL query or update request.
-Subject -- Representation of all triples that describe a single RDF subject.
-User -- Representation of a user of SKMF, made persistent in a SPARQL endpoint.
+    Query: Representation of a free-form SPARQL query or update request.
+    Subject: Representation of all triples that describe a single RDF subject.
+    User: Representation of SKMF user, made persistent in a SPARQL endpoint.
 """
 
 from skmf import app, g
@@ -189,7 +189,7 @@ class Subject(object):
         If a graph in the provided list is not present in the local graph list, then it is ignored.
         
         Params:
-            str:graph -- Short name of a named graph in the triplestore.
+            graphlist (str): Short names of named graphs in the triplestore.
         """
         for graph in graphlist:
             while graph in self.graphs:

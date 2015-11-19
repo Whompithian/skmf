@@ -9,7 +9,7 @@ as generalized as possible so that they may be dynamically formed rather than
 using static query strings with variable parameters.
 
 Classes:
-SPARQLER -- An extension of SPARQLWrapper to handle special cases for SKMF.
+    SPARQLER: An extension of SPARQLWrapper to handle special cases for SKMF.
 """
 
 from SPARQLWrapper import JSON, POST, SPARQLWrapper

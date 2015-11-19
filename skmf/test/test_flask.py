@@ -6,8 +6,8 @@ use of the SPARQL endpoint connection and, by extension, test much of the
 functionality of the SPARQL interface.
 
 Classes:
-    BaseTestCase -- Setup class for other TestCase classes.
-    FlaskTestCase -- Unit tests to verify correct behavior of Flask views.
+    BaseTestCase: Setup class for other TestCase classes.
+    FlaskTestCase: Unit tests to verify correct behavior of Flask views.
 """
 
 import unittest
@@ -30,11 +30,6 @@ class BaseTestCase(TestCase):
     to be subclassed in order to define actual tests. Any methods defined in
     this class may be safely overridden, so long as create_app properly sets up
     the Flask app.
-    
-    Methods:
-        create_app -- Setup the Flask app and set commonly needed parameters.
-        login -- Obtain a user session through the login view.
-        logout -- Clear a user session through the logout view.
     """
 
     def create_app(self):
@@ -61,12 +56,6 @@ class FlaskTestCase(BaseTestCase):
     
     Validate the behavior of template rendering, redirects, session management,
     form handling, error handling, and SPARQL endpoint operations.
-
-    Methods:
-        test_login_invalid -- 
-        test_login_logout -- 
-        test_views_get_responses -- 
-        test_view_restricted -- 
     """
 
     def test_sparql_query_subject(self):
