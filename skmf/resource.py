@@ -124,7 +124,7 @@ class Subject(object):
         type (str): How to interpret the id, one of 'uri', 'label', or 'NONE'.
     """
 
-    def __init__(self, id, type = 'uri', graphlist = [''], predlist = {}):
+    def __init__(self, id, type = 'uri', graphlist = [], predlist = {}):
         """Setup using defaults, provided values, or from the triplestore.
         
         If no predicate list is provided and 'type' is set to 'uri' - the default - then it is assumed that this Subject should be retrieved from the provided list of graphs based on the 'id' argument. This assumption is made to prevent the formation of a Subject that already exists in the triplestore but is treated as a new RDF subject. The only way to override this behavior is to set 'type' to something other than 'uri', although it is not recommended to use 'label' since that already has another meaning.
@@ -137,7 +137,8 @@ class Subject(object):
         """
         self.id = id
         self.type = type
-        self.graphs = graphlist
+        self.graphs = ['']
+        self.graphs.extend(graphlist)
         self.preds = predlist
         if self.type == 'uri' and not self.preds:
             results = g.sparql.query_subject(id, type, graphlist)
@@ -182,7 +183,7 @@ class Subject(object):
             if graph not in self.graphs:
                 self.graphs.append(graph)
 
-    def remove_graph(self, graphlist):
+    def remove_graphs(self, graphlist):
         """Remove a graph from the list of graphs to query for this subject.
         
         If a graph in the provided list is not present in the local graph list, then it is ignored.

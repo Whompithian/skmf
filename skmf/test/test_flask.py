@@ -74,22 +74,32 @@ class FlaskTestCase(BaseTestCase):
         id = 'http://localhost/skmf#admin'
         subject = 'http://localhost/skmf#User'
         result = g.sparql.query_subject(id)
+        # admin user not defined in the default graph
         self.assertEqual(len(result['results']['bindings']), 0)
         result = g.sparql.query_subject(subject)
+        # skmf:User is defined in the default graph
         self.assertNotEqual(len(result['results']['bindings']), 0)
         graphs = ['users']
-        print(id, graphs)
         result = g.sparql.query_subject(id, 'uri', graphs)
+        # admin user is defined in the users graph
         self.assertNotEqual(len(result['results']['bindings']), 0)
         result = g.sparql.query_subject(subject, 'uri', graphs)
+        # skmf:User not defined in the users graph
+        self.assertEqual(len(result['results']['bindings']), 0)
+        graphs.append('')
+        result = g.sparql.query_subject(subject, 'uri', graphs)
+        # skmf:User is defined in a provided graph
         self.assertNotEqual(len(result['results']['bindings']), 0)
         result = g.sparql.query_subject('bob', 'uri', graphs)
+        # 'bob' not defined in any graphs
         self.assertEqual(len(result['results']['bindings']), 0)
         graphs.append('bob')
         result = g.sparql.query_subject(id, 'uri', graphs)
+        # addition of 'bob' graph does not hide admin user
         self.assertNotEqual(len(result['results']['bindings']), 0)
         graphs.remove('users')
         result = g.sparql.query_subject(id, 'uri', graphs)
+        # removal of 'users' graph does hide admin user
         self.assertEqual(len(result['results']['bindings']), 0)
 
     def test_resource_subject(self):
@@ -100,29 +110,38 @@ class FlaskTestCase(BaseTestCase):
         rdfobject = {'value': 'Gone', 'type': 'literal', 'xml:lang': 'en-us'}
         predlist = {labelkey: {'type': 'uri', 'value': [rdfobject]}}
         subject = Subject(id)
+        # skmf:User should be read from triplestore with expected values
         self.assertEqual(subject.id, id)
         self.assertIn(labelkey, subject.preds)
         clone = Subject(subject.id, predlist=subject.preds)
+        # All values of 'clone' should match those of the copied 'subject'
         self.assertEqual(subject.id, clone.id)
         for predicate in subject.preds:
             self.assertEqual(subject.preds[predicate], clone.preds[predicate])
         miss = Subject(missing)
+        # skmf:undefined should not be found in the triplestore, empty subject
         self.assertEqual(miss.id, missing)
         self.assertEqual(len(miss.preds), 0)
         self.assertNotIn('miss', miss.graphs)
-        miss.add_graph('miss')
+        miss.add_graphs(['miss'])
+        # graph 'miss' should be in 'graphs' list
         self.assertIn('miss', miss.graphs)
-        miss.remove_graph('miss')
+        miss.remove_graphs(['miss'])
+        # graph 'miss' should no longer be in 'graphs' list
         self.assertNotIn('miss', miss.graphs)
-        miss.add_data(predlist=predlist)
+        miss.add_data(graphlist=[''], predlist=predlist)
+        # data should appear in object
         self.assertIn(labelkey, miss.preds)
         self.assertIn(rdfobject, miss.preds[labelkey]['value'])
         clone = Subject(miss.id)
+        # 'clone' should have pulled added data from triplestore
         self.assertIn(labelkey, clone.preds)
         self.assertIn(rdfobject, clone.preds[labelkey]['value'])
-        miss.remove_data(predlist=predlist)
+        miss.remove_data(graphlist=[''], predlist=predlist)
+        # data should no longer appear in object
         self.assertNotIn(labelkey, miss.preds)
         clone = Subject(miss.id)
+        # 'clone' should no longer pull removed data from triplestore
         self.assertNotIn(labelkey, clone.preds)
 
     def test_resource_user(self):
