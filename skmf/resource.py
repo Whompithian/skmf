@@ -51,6 +51,103 @@ class Query(object):
         self.labels = labellist
         self.subjects = subjectlist
 
+    def _add_preds(self, subject, predlist):
+        """Add some predicates to the specified subject of this Query.
+        
+        Each predicate is added only if at least one of the RDF objects it holds can be added. The provided predicate list is checked for consistency, but it is assumed that the local subject list is already well-formed and contains the subject in the argument list. To prevent KeyError from being raised while adding objects, an empty string is paired with the 'value' key in a dict that is paired with this predicate in stored subject. If the list does not get populated, then this dict is removed. Any predicates that are successfully added are appended to a dict that is returned upon completion.
+        
+        Args:
+            predlist (dict): Predicates and objects to add to this Query.
+            subject (str): ID of the subject to which the predicates apply.
+        
+        Returns:
+            dict of predicates and RDF objects that were successfully added.
+        """
+        new_preds = {}
+        for pred in predlist:
+            if predlist[pred]['value'] and predlist[pred]['type']:
+                new_type = predlist[pred]['type']
+                if pred not in self.subjects[subject]['value']:
+                    # to prevent KeyError at lower levels
+                    empty = {'type': new_type, 'value': []}
+                    self.subjects[subject]['value'][pred] = empty
+                objectlist = predlist[pred]['value']
+                new_objects = self._add_objects(subject, pred, objectlist)
+                if new_objects:
+                    new_value = {'type': new_type, 'value': new_objects}
+                    new_preds[pred] = new_value
+                # cleanup if no objects were added
+                if not self.subjects[subject]['value'][pred]['value']:
+                    del self.subjects[subject]['value'][pred]
+        return new_preds
+
+    def _add_objects(self, subj, pred, objectlist):
+        """Add objects to the specified subject and predicate of this Query.
+        
+        Each object is added only if it does not already exist in the 'value' component of the specified predicate within the specified subject. The provided object list is checked for consistency, but it is assumed that the local subject list is already well-formed and contains the subject in the argument list, along with the corresponding predicate. Any RDF objects that are successfully added are appended to a list that is returned upon completion.
+        
+        Args:
+            objectlist (list): RDF objects to apply to a subject and predicate.
+            pred (str): ID of the predicate to which the RDF objects apply.
+            subj (str): ID of the subject to which the RDF objects apply.
+        
+        Returns:
+            list of valid RDF objects that were successfully added.
+        """
+        new_objects = []
+        for object in objectlist:
+            if object['type'] and object['value']:
+                if object not in self.subjects[subj]['value'][pred]['value']:
+                    self.subjects[subj]['value'][pred]['value'].append(object)
+                    new_objects.append(object)
+        return new_objects
+
+    def _remove_preds(self, subject, predlist):
+        """Remove some predicates from the specified subject of this Query.
+        
+        Each predicate is removed only if all of the RDF objects it held were also removed. The provided predicate list is checked for consistency, but it is assumed that the local subject list is already well-formed and contains the subject in the argument list. Any predicates that had at least one object removed, however, are appended, along with those objects, to a dict that is returned upon completion.
+        
+        Args:
+            predlist (dict): Predicates and objects to remove from this Query.
+            subject (str): ID of the subject to which the predicates apply.
+        
+        Returns:
+            dict of predicates and RDF objects that were successfully removed.
+        """
+        old_preds = {}
+        for pred in predlist:
+            if pred in self.subjects[subject]['value']:
+                if predlist[pred]['value'] and predlist[pred]['type']:
+                    objectlist = predlist[pred]['value']
+                    objects = self._remove_objects(subject, pred, objectlist)
+                    if objects:
+                        old_type = predlist[pred]['type']
+                        old_value = {'type': old_type, 'value': objects}
+                        old_preds[pred] = old_value
+                        if not self.subjects[subject]['value'][pred]['value']:
+                            del self.subjects[subject]['value'][pred]
+        return old_preds
+
+    def _remove_objects(self, subj, pred, objectlist):
+        """Remove some predicates from the specified subject of this Query.
+        
+        Each object is removed only if it already exists in the 'value' component of the specified predicate within the specified subject. The provided object list is checked for consistency, but it is assumed that the local subject list is already well-formed and contains the subject in the argument list, along with the corresponding predicate. Any RDF objects that are successfully removed are appended to a list that is returned upon completion.
+        
+        Args:
+            objectlist (list): Objects to remove from a subject and predicate.
+            pred (str): ID of the predicate to which the RDF objects apply.
+            subj (str): ID of the subject to which the RDF objects apply.
+        
+        Returns:
+            list of RDF objects that were successfully removed.
+        """
+        old_objects = []
+        for object in objectlist:
+            if object in self.subjects[subj]['value'][pred]['value']:
+                self.subjects[subj]['value'][pred]['value'].remove(object)
+                old_objects.append(object)
+        return old_objects
+
     def add_graphs(self, graphlist):
         """Append one or more named graphs to be included in any queries.
         
@@ -77,17 +174,54 @@ class Query(object):
 
     def add_constraints(self, subject = None, type = None,
                        labellist = [], subjectlist = {}):
-        """Add placeholder and relationship constraints to refine a query.
+        """Add placeholders and relationship constraints to refine a query.
         
-        New constraints may be provided as a combination of a Subject class object and a dict of subjects as stored by the Query class. The former requires the presence of the 'type' argument and requires more parsing than the latter. Typically, entries in the label list will coincide with the Subject id - if provided and if type = 'label' - or with a <subject_label>, a <predicate_label>, or an <object_label> that appears in the subject list, though this need not be the case. Labels may be provided on their own, for instance, if one was previously omitted by mistake. Only the smallest non-matching component of each argument is added. Any element of an argument that already exists in this Query is silently ignored.
+        New constraints may be provided as a combination of a Subject class object and a dict of subjects as stored by the Query class. The former requires the presence of the 'type' argument. Typically, entries in the label list will coincide with the Subject id - if provided and if type = 'label' - or with a <subject_label>, a <predicate_label>, or an <object_label> that appears in the subject list, though this need not be the case. Labels may be provided on their own, for instance, if one was previously omitted by mistake. Only the smallest non-matching component of each argument is added. Any element of an argument that already exists in this Query is silently ignored.
         
         Args:
             labellist (list): Labels for the header of query results.
             subject (Subject): Subject that contains triples to refine a query.
             subjectlist(dict): Description of query element relationships.
             type (str): The type of Subject id string, either 'uri' or 'label'.
+        
+        Returns:
+            A list and dict of the components that were successfully added.
         """
-        pass
+        new_subjects = {}
+        new_labels = []
+        for label in labellist:
+            if label not in self.labels:
+                self.labels.append(label)
+                new_labels.append(label)
+        if subject and type:
+            if subject.preds:
+                if subject.id not in self.subjects:
+                    # to prevent KeyError at lower levels
+                    empty = {'type': type, 'value': {}}
+                    self.subjects[subject.id] = empty
+                new_preds = self._add_preds(subject.id, subject.preds)
+                if new_preds:
+                    new_value = {'type': type, 'value': new_preds}
+                    new_subjects[subject.id] = new_value
+                # cleanup if no predicates were added
+                if not self.subjects[subject.id]['value']:
+                    del self.subjects[subject.id]
+        for subj in subjectlist:
+            if subjectlist[subj]['value'] and subjectlist[subj]['type']:
+                new_type = subjectlist[subj]['type']
+                if subj not in self.subjects:
+                    # to prevent KeyError at lower levels
+                    empty = {'type': type, 'value': {}}
+                    self.subjects[subj] = empty
+                predlist = subjectlist[subj]['value']
+                new_preds = self._add_preds(subj, predlist)
+                if new_preds:
+                    new_value = {'type': new_type, 'value': new_preds}
+                    new_subjects[subj] = new_value
+                # cleanup if no predicates were added
+                if not self.subjects[subj]['value']:
+                    del self.subjects[subj]
+        return new_labels, new_subjects
 
     def remove_constraints(self, subject = None,
                           labellist = [], subjectlist = {}):
@@ -99,8 +233,33 @@ class Query(object):
             labellist (list): Labels for the header of query results.
             subject (Subject): Subject that contains triples to refine a query.
             subjectlist(dict): Description of query element relationships.
+        
+        Returns:
+            A list and dict of the components that were successfully removed.
         """
-        pass
+        old_subjects = {}
+        old_labels = []
+        for label in labellist:
+            if label in self.labels:
+                self.labels.remove(label)
+                old_labels.append(label)
+        if subject:
+            if subject.id in self.subjects:
+                old_value = self._remove_preds(subject, subject.preds)
+                if old_value:
+                    old_subjects[subject.id] = old_value
+                    if not self.subjects[subject.id]['value']:
+                        del self.subjects[subject.id]
+        for subj in subjectlist:
+            if subj in self.subjects:
+                if subjectlist[subj]['value']:
+                    old_preds = subjectlist[subj]['value']
+                    old_value = self._remove_preds(subj, old_preds)
+                    if old_value:
+                        old_subjects[subj] = old_value
+                        if not self.subjects[subj]['value']:
+                            del self.subjects[subj]
+        return old_labels, old_subjects
 
 
 class Subject(object):
@@ -151,6 +310,7 @@ class Subject(object):
         
         Args:
             results (dict): JSON format results of SPARQL query for a subject.
+        
         Returns:
             A graph containing descriptive predicates and associated objects.
         """
@@ -176,7 +336,7 @@ class Subject(object):
         
         If a graph in the provided list is not present in the local graph list, then it is ignored.
         
-        Params:
+        Args:
             graphlist (list): Short names of named graphs in the triplestore.
         """
         for graph in graphlist:
@@ -188,7 +348,7 @@ class Subject(object):
         
         If a graph in the provided list is not present in the local graph list, then it is ignored.
         
-        Params:
+        Args:
             graphlist (str): Short names of named graphs in the triplestore.
         """
         for graph in graphlist:
@@ -203,9 +363,11 @@ class Subject(object):
         Params:
             graphlist (list): Named graphs that should hold the new triples.
             predlist (list): New data to add, in the same format at self.preds.
+        
         Returns:
             The list of graphs that were available for adding triples.
             The dictionary of predicates that were actually added.
+        
         Raises:
             
         """
@@ -245,9 +407,11 @@ class Subject(object):
         Params:
             graphlist (list): Named graphs from which to delete triples.
             predlist (graph): Data to delete, in the same format as self.preds.
+        
         Returns:
             The list of graphs that were available for removing triples.
             The dictionary of predicates that were actually deleted.
+        
         Raises:
             
         """
@@ -329,6 +493,7 @@ class User(Subject):
         
         Args:
             username (str): Unique user id, same as name portion of Subject id.
+        
         Returns:
             A User if username was found in the triplestore, otherwise 'None'.
         """

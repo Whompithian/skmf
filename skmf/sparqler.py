@@ -48,6 +48,7 @@ class SPARQLER(SPARQLWrapper):
         
         Args:
             graphlist (list): Named graphs to include in the 'FROM' section.
+        
         Returns:
             String of FROM lines for a SPARQL query.
         """
@@ -68,6 +69,7 @@ class SPARQLER(SPARQLWrapper):
         
         Args:
             labellist (list): Header labels for query placeholders.
+        
         Returns:
             String of header labels for a SPARQL query.
         """
@@ -86,6 +88,7 @@ class SPARQLER(SPARQLWrapper):
         
         Args:
             subjectlist (dict): Triples that form the content of a query.
+        
         Returns:
             String containing the body for a SPARQL query.
         """
@@ -110,6 +113,7 @@ class SPARQLER(SPARQLWrapper):
         Args:
             predlist (dict): Predicates and objects associated with a subject.
             subject (str): URI, label, or prefixed name of one RDF subject.
+        
         Returns:
             String of a complete statement in the body of a SPARQL query.
         """
@@ -142,6 +146,7 @@ class SPARQLER(SPARQLWrapper):
         Args:
             objectlist (dict): Objects associated with a subject and predicate.
             predicate (str): URI, label, or prefixed name of a predicate.
+        
         Returns:
             String of a SPARQL statement from just after the subject.
         """
@@ -173,6 +178,7 @@ class SPARQLER(SPARQLWrapper):
         
         Args:
             rdfobject (dict): Object associated with a subject and predicate.
+        
         Returns:
             String of a SPARQL statement from just after one predicate.
         """
@@ -201,8 +207,10 @@ class SPARQLER(SPARQLWrapper):
             graphlist (list): Named graphs in which to scope the query.
             labellist (list): Header labels for the query results.
             subjectlist (dict): Structured data that define the query.
+        
         Returns:
             JSON object containing SPARQL query results.
+        
         Raises:
             
         """
@@ -262,6 +270,7 @@ class SPARQLER(SPARQLWrapper):
             graphlist (list): Named graphs in which to scope the query.
             id (str): URI or prefixed name to identify the query subject.
             type (str): Should be 'uri' or 'pfx' for prefixed name.
+        
         Returns:
             Result of SPARQL query for predicates and objects of a subject.
         """
@@ -280,6 +289,7 @@ class SPARQLER(SPARQLWrapper):
             action (str): The update action, either 'INSERT' or 'DELETE'.
             graphlist (list): Named graphs in which to perform the update.
             subjectlist (dict): Structured data that define the update.
+        
         Raises:
             
         """
