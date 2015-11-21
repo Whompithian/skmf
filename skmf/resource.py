@@ -208,7 +208,7 @@ class Query(object):
                 new_type = subjectlist[subj]['type']
                 if subj not in self.subjects:
                     # to prevent KeyError at lower levels
-                    empty = {'type': type, 'value': {}}
+                    empty = {'type': new_type, 'value': {}}
                     self.subjects[subj] = empty
                 predlist = subjectlist[subj]['value']
                 new_preds = self._add_preds(subj, predlist)

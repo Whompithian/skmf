@@ -22,7 +22,7 @@ from flask.ext.login import current_user
 from flask.ext.testing import TestCase
 
 from skmf import connect_sparql, g
-from skmf.resource import Subject, User
+from skmf.resource import Query, Subject, User
 import skmf.i18n.en_US as uiLabel
 
 
@@ -102,6 +102,23 @@ class ResourceQueryTestCase(BaseTestCase):
     Validate the behavior of middleware for SPARQL endpoint operations.
     """
 
+    def test_resource_query(self):
+        """Verify that RDF subjects are properly defined and behaved."""
+        query = Query()
+        self.assertIn('', query.graphs)
+        self.assertFalse(query.labels)
+        self.assertFalse(query.subjects)
+        self.assertNotIn('bob', query.graphs)
+        query.add_graphs({'bob'})
+        self.assertIn('bob', query.graphs)
+        query.remove_graphs({'bob'})
+        self.assertNotIn('bob', query.graphs)
+        query.add_graphs({'users'})
+        constraint = {'s': {'type': 'label', 'value': {'p': {'type': 'label', 'value': [{'type': 'label', 'value': 'o'}]}}}}
+        query.add_constraints(labellist={'s', 'p', 'o'}, subjectlist=constraint)
+        print(query.subjects)
+        self.assertFalse(True)
+
 
 class ResourceSubjectTestCase(BaseTestCase):
     """Unit tests to verify the correct behavior of RDF Subjects and methods.
@@ -115,6 +132,7 @@ class ResourceSubjectTestCase(BaseTestCase):
     rdfobject = {'value': 'Gone', 'type': 'literal', 'xml:lang': 'en-us'}
     predlist = {labelkey: {'type': 'uri', 'value': [rdfobject]}}
 
+    @unittest.skip('Kinda scary')
     def test_resource_subject(self):
         """Verify that RDF subjects are properly defined and behaved."""
         subject = Subject(self.id)
