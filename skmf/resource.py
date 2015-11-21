@@ -37,14 +37,14 @@ class Query(object):
             }
     """
 
-    def __init__(self, graphlist = [''], labellist = [], subjectlist = {}):
+    def __init__(self, graphlist = {''}, labellist = set(), subjectlist = {}):
         """Setup the lists and dictionary to hold the query elements.
         
         A Query may be set with empty values and still be valid. If no graphs are provided, the backend is expected to scope the query to the triplestore's default graph, represented by an empty string. If no labels are provided, the backend is expected to scope the query to 'SELECT *', which relies on the labels provided in the subject list. In any case, if no subjects are provided, any query should be expected to return an empty result set.
         
         Args:
-            graphlist (list): Additional graphs to which to scope a query.
-            labellist (list): Labels for the header of query results.
+            graphlist (set): Additional graphs to which to scope a query.
+            labellist (set): Labels for the header of query results.
             subjectlist (dict): Description of query element relationships.
         """
         self.graphs = graphlist
@@ -154,11 +154,9 @@ class Query(object):
         If a graph in the provided list already exists in the local graph list, then it is ignored.
         
         Args:
-            graphlist (list): New named graphs to include in future queries.
+            graphlist (set): New named graphs to include in future queries.
         """
-        for graph in graphlist:
-            if graph not in self.graphs:
-                self.graphs.append(graph)
+        self.graphs.update(graphlist)
 
     def remove_graphs(self, graphlist):
         """Remove one or more named graphs from inclusion in future queries.
@@ -166,20 +164,19 @@ class Query(object):
         If a graph in the provided list is not present in the local graph list, then it is ignored.
         
         Args:
-            graphlist (list): Named graphs to exclude from future queries.
+            graphlist (set): Named graphs to exclude from future queries.
         """
         for graph in graphlist:
-            while graph in self.graphs:
-                self.graphs.remove(graph)
+            self.graphs.discard(graph)
 
     def add_constraints(self, subject = None, type = None,
-                       labellist = [], subjectlist = {}):
+                       labellist = set(), subjectlist = {}):
         """Add placeholders and relationship constraints to refine a query.
         
         New constraints may be provided as a combination of a Subject class object and a dict of subjects as stored by the Query class. The former requires the presence of the 'type' argument. Typically, entries in the label list will coincide with the Subject id - if provided and if type = 'label' - or with a <subject_label>, a <predicate_label>, or an <object_label> that appears in the subject list, though this need not be the case. Labels may be provided on their own, for instance, if one was previously omitted by mistake. Only the smallest non-matching component of each argument is added. Any element of an argument that already exists in this Query is silently ignored.
         
         Args:
-            labellist (list): Labels for the header of query results.
+            labellist (set): Labels for the header of query results.
             subject (Subject): Subject that contains triples to refine a query.
             subjectlist(dict): Description of query element relationships.
             type (str): The type of Subject id string, either 'uri' or 'label'.
@@ -191,7 +188,7 @@ class Query(object):
         new_labels = []
         for label in labellist:
             if label not in self.labels:
-                self.labels.append(label)
+                self.labels.add(label)
                 new_labels.append(label)
         if subject and type:
             if subject.preds:
@@ -224,13 +221,13 @@ class Query(object):
         return new_labels, new_subjects
 
     def remove_constraints(self, subject = None,
-                          labellist = [], subjectlist = {}):
+                          labellist = set(), subjectlist = {}):
         """Remove placeholder and relationship constraints from a query.
         
         Unlike with addition, removal does not require a type to be specified for a Subject, since the 'subjects' dict guarantees the uniqueness of its id. Only the smallest matching component of each argument is added. Any element of an argument that does not already exist in this Query is silently ignored.
         
         Args:
-            labellist (list): Labels for the header of query results.
+            labellist (set): Labels for the header of query results.
             subject (Subject): Subject that contains triples to refine a query.
             subjectlist(dict): Description of query element relationships.
         
@@ -283,23 +280,23 @@ class Subject(object):
         type (str): How to interpret the id, one of 'uri', 'label', or 'NONE'.
     """
 
-    def __init__(self, id, type = 'uri', graphlist = [], predlist = {}):
+    def __init__(self, id, type = 'uri', graphlist = set(), predlist = {}):
         """Setup using defaults, provided values, or from the triplestore.
         
         If no predicate list is provided and 'type' is set to 'uri' - the default - then it is assumed that this Subject should be retrieved from the provided list of graphs based on the 'id' argument. This assumption is made to prevent the formation of a Subject that already exists in the triplestore but is treated as a new RDF subject. The only way to override this behavior is to set 'type' to something other than 'uri', although it is not recommended to use 'label' since that already has another meaning.
         
         Args:
-            graphlist (list): Named graphs to which a subject may belong.
+            graphlist (set): Named graphs to which a subject may belong.
             id (str): Unique value to assign to this subject for queries.
             predlist (dict): Predicates and their associated objects.
             type (str): 'uri' for SPARQL URI or 'label' for a placeholder.
         """
         self.id = id
         self.type = type
-        self.graphs = ['']
-        self.graphs.extend(graphlist)
+        self.graphs = {''}
+        self.graphs.update(graphlist)
         self.preds = predlist
-        if self.type == 'uri' and not self.preds:
+        if self.type != 'label' and not self.preds:
             results = g.sparql.query_subject(id, type, graphlist)
             self.preds = self._init_values(results)
 
@@ -337,11 +334,9 @@ class Subject(object):
         If a graph in the provided list is not present in the local graph list, then it is ignored.
         
         Args:
-            graphlist (list): Short names of named graphs in the triplestore.
+            graphlist (set): Short names of named graphs in the triplestore.
         """
-        for graph in graphlist:
-            if graph not in self.graphs:
-                self.graphs.append(graph)
+        self.graphs.update(graphlist)
 
     def remove_graphs(self, graphlist):
         """Remove a graph from the list of graphs to query for this subject.
@@ -349,98 +344,87 @@ class Subject(object):
         If a graph in the provided list is not present in the local graph list, then it is ignored.
         
         Args:
-            graphlist (str): Short names of named graphs in the triplestore.
+            graphlist (set): Short names of named graphs in the triplestore.
         """
         for graph in graphlist:
-            while graph in self.graphs:
-                self.graphs.remove(graph)
+            self.graphs.discard(graph)
 
-    def add_data(self, graphlist = [], predlist = {}):
+    def add_data(self, graphlist = set(), predlist = {}):
         """Add new triples that describe this subject to the triplestore.
         
-        The provided graph list is used to determine to which graphs triples are added, but any graphs that are not attributed to this Subject are ignored to support access control mechanisms.
+        The provided graph list is used to determine to which graphs triples are added, but any graphs that are not attributed to this Subject are ignored to support access control mechanisms. No default graph is provided for INSERTs, so this list should not be empty.
         
         Params:
-            graphlist (list): Named graphs that should hold the new triples.
-            predlist (list): New data to add, in the same format at self.preds.
+            graphlist (set): Named graphs that should hold the new triples.
+            predlist (dict): New data to add, in the same format at self.preds.
         
         Returns:
             The list of graphs that were available for adding triples.
             The dictionary of predicates that were actually added.
-        
-        Raises:
-            
         """
-        new_data = {}
-        graphs = []
+        new_preds = {}
+        new_graphs = []
         for graph in graphlist:
             if graph in self.graphs:
-                graphs.append(graph)
-        try:
-            for predicate in predlist:
-                if predicate not in self.preds and len(predlist[predicate]['value']) > 0:
-                    self.preds[predicate] = predlist[predicate]
-                    new_data[predicate] = predlist[predicate]
-                else:
-                    type = predlist[predicate]['type']
-                    rdfobjects = predlist[predicate]['value']
-                    new_data[predicate] = {'type': type, 'value': []}
-                    for rdfobject in rdfobjects:
+                new_graphs.append(graph)
+        for predicate in predlist:
+            if predlist[predicate]['value'] and predlist[predicate]['type']:
+                new_type = predlist[predicate]['type']
+                rdfobjects = predlist[predicate]['value']
+                temp = {'type': new_type, 'value': []}
+                # to avoid KeyError during iteration
+                if predicate not in self.preds:
+                    self.preds[predicate] = temp
+                for rdfobject in rdfobjects:
+                    if rdfobject['value'] and rdfobject['type']:
                         if rdfobject not in self.preds[predicate]['value']:
                             self.preds[predicate]['value'].append(rdfobject)
-                            new_data[predicate]['value'].append(rdfobject)
-                if not new_data[predicate]['value']:
-                    del new_data[predicate]
-            if len(new_data) > 0:
-                record = {self.id: {'type': self.type, 'value': new_data}}
-                g.sparql.insert(graphs, record)
-                return graphs, record
-        except:
-            return None
-        return graphs
+                            assert temp['value']
+                if temp['value']:
+                    new_preds[predicate] = temp
+                else:
+                    del self.preds[predicate]
+        if new_preds:
+            record = {self.id: {'type': self.type, 'value': new_preds}}
+            g.sparql.insert(new_graphs, record)
+        return new_graphs, new_preds
 
-    def remove_data(self, graphlist = [], predlist = {}):
+    def remove_data(self, graphlist = set(), predlist = {}):
         """Delete triples for this subject from some graphs in the triplestore.
         
-        The provided graph list is used to determine from which graphs triples are deleted, but any graphs that are not attributed to this Subject are ignored to support access control mechanisms.
+        The provided graph list is used to determine from which graphs triples are deleted, but any graphs that are not attributed to this Subject are ignored to support access control mechanisms. No default graph is provided for DELETEs, so this list should not be empty.
         
         Params:
-            graphlist (list): Named graphs from which to delete triples.
+            graphlist (set): Named graphs from which to delete triples.
             predlist (graph): Data to delete, in the same format as self.preds.
         
         Returns:
             The list of graphs that were available for removing triples.
             The dictionary of predicates that were actually deleted.
-        
-        Raises:
-            
         """
-        old_data = {}
-        graphs = []
+        old_preds = {}
+        old_graphs = []
         for graph in graphlist:
             if graph in self.graphs:
-                graphs.append(graph)
-        try:
-            for predicate in predlist:
+                old_graphs.append(graph)
+        for predicate in predlist:
+            if predlist[predicate]['value'] and predlist[predicate]['type']:
                 if predicate in self.preds:
-                    type = predlist[predicate]['type']
+                    old_type = predlist[predicate]['type']
                     rdfobjects = predlist[predicate]['value']
-                    old_data[predicate] = {'type': type, 'value': []}
+                    temp = {'type': old_type, 'value': []}
                     for rdfobject in rdfobjects:
                         if rdfobject in self.preds[predicate]['value']:
                             self.preds[predicate]['value'].remove(rdfobject)
-                            old_data[predicate]['value'].append(rdfobject)
-                    if not self.preds[predicate]['value']:
-                        del self.preds[predicate]
-                    if not old_data[predicate]['value']:
-                        del old_data[predicate]
-            if len(old_data) > 0:
-                record = {self.id: {'type': self.type, 'value': old_data}}
-                g.sparql.delete(graphs, record)
-                return graphs, record
-        except:
-            return None
-        return graphs
+                            temp['value'].append(rdfobject)
+                    if temp['value']:
+                        old_preds[predicate] = temp
+                        if not self.preds[predicate]['value']:
+                            del self.preds[predicate]
+        if old_preds:
+            record = {self.id: {'type': self.type, 'value': old_preds}}
+            g.sparql.delete(old_graphs, record)
+        return old_graphs, old_preds
 
     def update_data(self, graphlist = [], predlist = {}):
         """"""
@@ -481,8 +465,8 @@ class User(Subject):
         #b'$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.'
         namespace = app.config['NAMESPACE']
         id = namespace + username
-        graph = ['users']
-        super(User, self).__init__(id=id, graphlist=graph, predlist=predlist)
+        graph = {'users'}
+        super().__init__(id=id, graphlist=graph, predlist=predlist)
         self.username      = username
         self.authenticated = False
 
@@ -537,7 +521,7 @@ class User(Subject):
         newvalue = hashpass.decode('utf-8')
         newobject = {'value': newvalue, 'type': 'literal'}
         newpred = {User.hashkey: {'type': 'uri', 'value': [newobject]}}
-        graphlist = ['users']
+        graphlist = {'users'}
         dropvalue = {}
         if User.hashkey in self.preds:
             dropvalue[User.hashkey] = self.preds[User.hashkey]

@@ -41,13 +41,13 @@ class SPARQLER(SPARQLWrapper):
                                        returnFormat=returnFormat,
                                        defaultGraph=defaultGraph)
 
-    def _set_graphs(self, graphlist = []):
+    def _set_graphs(self, graphlist = set()):
         """Return a string for the full 'FROM' section of a SPARQL query.
         
         The empty string denotes the default graph. Otherwise, the named graph URI is formed by combining the local namespace with the name of the graph, separated by '/'. Depending on the SPARQL endpoint, omitting the graph may have the same effect as providing only the default graph.
         
         Args:
-            graphlist (list): Named graphs to include in the 'FROM' section.
+            graphlist (set): Named graphs to include in the 'FROM' section.
         
         Returns:
             String of FROM lines for a SPARQL query.
@@ -62,7 +62,7 @@ class SPARQLER(SPARQLWrapper):
             graphs.append('FROM <{}>\n'.format(graphuri))
         return ''.join(graphs)
 
-    def _set_labels(self, labellist = []):
+    def _set_labels(self, labellist = set()):
         """Return the header string for a SPARQL query.
         
         If no labels are provided, the wildcard '*' is assumed. Leading white space is used as a separator to avoid trailing white space at the end of the line.
@@ -197,15 +197,15 @@ class SPARQLER(SPARQLWrapper):
             raise QueryBadFormed(uiLabel.errorSparqlQueryObject)
         return ''.join(body)
 
-    def query_general(self, graphlist = [''],
-                      labellist = [], subjectlist = {}):
+    def query_general(self, graphlist = {''},
+                      labellist = set(), subjectlist = {}):
         """Return the results of an arbitrarily complex SELECT query.
         
         A boilerplate is provided for a SELECT query. The formatting is performed by helper methods, one for each of the main sections. EVENTUALLY, this method will be generalized enough to allow most SPARQL query types.
         
         Args:
-            graphlist (list): Named graphs in which to scope the query.
-            labellist (list): Header labels for the query results.
+            graphlist (set): Named graphs in which to scope the query.
+            labellist (set): Header labels for the query results.
             subjectlist (dict): Structured data that define the query.
         
         Returns:
@@ -261,13 +261,13 @@ class SPARQLER(SPARQLWrapper):
         except EndPointInternalError:
             raise
 
-    def query_subject(self, id, type = 'uri', graphlist = ['']):
+    def query_subject(self, id, type = 'uri', graphlist = {''}):
         """Return all predicates and objects of the subject having id.
         
         Primarily used to initialize a Subject from the 'resource' module. The components of a query are assembled to return all predicates and objects associated with the identified subject. It is not considered an error if the object does not exist.
         
         Args:
-            graphlist (list): Named graphs in which to scope the query.
+            graphlist (set): Named graphs in which to scope the query.
             id (str): URI or prefixed name to identify the query subject.
             type (str): Should be 'uri' or 'pfx' for prefixed name.
         
@@ -277,17 +277,17 @@ class SPARQLER(SPARQLWrapper):
         rdfobject = {'type': 'label', 'value': 'o'}
         predicate = {'p': {'type': 'label', 'value': [rdfobject]}}
         subject = {id: {'type': type, 'value': predicate}}
-        labels = ['p', 'o']
+        labels = {'p', 'o'}
         return self.query_general(graphlist, labels, subject)
 
-    def _update(self, action, graphlist = [], subjectlist = {}):
+    def _update(self, action, graphlist = set(), subjectlist = {}):
         """Perform update actions against a SPARQL endpoint.
         
         A boilerplate is provided for an UPDATE statement. The formatting is performed by helper methods, one for each of the main sections. EVENTUALLY, this method will be generalized enough to allow most SPARQL update actions.
         
         Args:
             action (str): The update action, either 'INSERT' or 'DELETE'.
-            graphlist (list): Named graphs in which to perform the update.
+            graphlist (set): Named graphs in which to perform the update.
             subjectlist (dict): Structured data that define the update.
         
         Raises:
@@ -318,21 +318,21 @@ class SPARQLER(SPARQLWrapper):
             except (EndPointNotFound, QueryBadFormed, EndPointInternalError):
                 raise
 
-    def insert(self, graphlist = [], subjectlist = {}):
+    def insert(self, graphlist = set(), subjectlist = {}):
         """Perform an INSERT of some RDF triples into a triplestore.
         
         Args:
-            graphlist (list): Named graphs in which to perform the insertion.
+            graphlist (set): Named graphs in which to perform the insertion.
             subjectlist (dict): Structured data to be placed in a triplestore.
         """
         self._update(action='INSERT', graphlist=graphlist,
                      subjectlist=subjectlist)
 
-    def delete(self, graphlist = [], subjectlist = {}):
+    def delete(self, graphlist = set(), subjectlist = {}):
         """Perform a DELETE of some RDF triples from a triplestore.
         
         Args:
-            graphlist (list): Named graphs in which to perform the deletion.
+            graphlist (set): Named graphs in which to perform the deletion.
             subjectlist (dict): Structured data to be removed from triplestore.
         """
         self._update(action='DELETE', graphlist=graphlist, 

@@ -8,6 +8,10 @@ functionality of the SPARQL interface.
 Classes:
     BaseTestCase: Setup class for other TestCase classes.
     FlaskTestCase: Unit tests to verify correct behavior of Flask views.
+    SPARQLERTestCase: 
+    ResourceQueryTestCase: 
+    ResourceSubjectTestCase:
+    ResourceUserTestCase: 
 """
 
 import unittest
@@ -51,7 +55,7 @@ class BaseTestCase(TestCase):
         return self.client.get(url_for('logout'), follow_redirects=True)
 
 
-class FlaskTestCase(BaseTestCase):
+class SPARQLERTestCase(BaseTestCase):
     """Unit tests to verify the correct behavior of Flask views and databases.
     
     Validate the behavior of template rendering, redirects, session management,
@@ -64,32 +68,48 @@ class FlaskTestCase(BaseTestCase):
         subject = 'http://localhost/skmf#User'
         result = g.sparql.query_subject(id)
         # admin user not defined in the default graph
-        self.assertEqual(len(result['results']['bindings']), 0)
+        self.assertFalse(result['results']['bindings'])
         result = g.sparql.query_subject(subject)
         # skmf:User is defined in the default graph
-        self.assertNotEqual(len(result['results']['bindings']), 0)
-        graphs = ['users']
+        self.assertTrue(result['results']['bindings'])
+        graphs = {'users'}
         result = g.sparql.query_subject(id, 'uri', graphs)
         # admin user is defined in the users graph
-        self.assertNotEqual(len(result['results']['bindings']), 0)
+        self.assertTrue(result['results']['bindings'])
         result = g.sparql.query_subject(subject, 'uri', graphs)
         # skmf:User not defined in the users graph
-        self.assertEqual(len(result['results']['bindings']), 0)
-        graphs.append('')
+        self.assertFalse(result['results']['bindings'])
+        graphs.add('')
         result = g.sparql.query_subject(subject, 'uri', graphs)
         # skmf:User is defined in a provided graph
-        self.assertNotEqual(len(result['results']['bindings']), 0)
+        self.assertTrue(result['results']['bindings'])
         result = g.sparql.query_subject('bob', 'uri', graphs)
         # 'bob' not defined in any graphs
-        self.assertEqual(len(result['results']['bindings']), 0)
-        graphs.append('bob')
+        self.assertFalse(result['results']['bindings'])
+        graphs.add('bob')
         result = g.sparql.query_subject(id, 'uri', graphs)
         # addition of 'bob' graph does not hide admin user
-        self.assertNotEqual(len(result['results']['bindings']), 0)
-        graphs.remove('users')
+        self.assertTrue(result['results']['bindings'])
+        graphs.discard('users')
         result = g.sparql.query_subject(id, 'uri', graphs)
         # removal of 'users' graph does hide admin user
-        self.assertEqual(len(result['results']['bindings']), 0)
+        self.assertFalse(result['results']['bindings'])
+
+
+class ResourceQueryTestCase(BaseTestCase):
+    """Unit tests to verify the correct behavior of Flask views and databases.
+    
+    Validate the behavior of template rendering, redirects, session management,
+    form handling, error handling, and SPARQL endpoint operations.
+    """
+
+
+class ResourceSubjectTestCase(BaseTestCase):
+    """Unit tests to verify the correct behavior of Flask views and databases.
+    
+    Validate the behavior of template rendering, redirects, session management,
+    form handling, error handling, and SPARQL endpoint operations.
+    """
 
     def test_resource_subject(self):
         """Verify that RDF subjects are properly defined and behaved."""
@@ -110,15 +130,15 @@ class FlaskTestCase(BaseTestCase):
         miss = Subject(missing)
         # skmf:undefined should not be found in the triplestore, empty subject
         self.assertEqual(miss.id, missing)
-        self.assertEqual(len(miss.preds), 0)
+        self.assertFalse(miss.preds)
         self.assertNotIn('miss', miss.graphs)
-        miss.add_graphs(['miss'])
+        miss.add_graphs({'miss'})
         # graph 'miss' should be in 'graphs' list
         self.assertIn('miss', miss.graphs)
-        miss.remove_graphs(['miss'])
+        miss.remove_graphs({'miss'})
         # graph 'miss' should no longer be in 'graphs' list
         self.assertNotIn('miss', miss.graphs)
-        miss.add_data(graphlist=[''], predlist=predlist)
+        miss.add_data(graphlist={''}, predlist=predlist)
         # data should appear in object
         self.assertIn(labelkey, miss.preds)
         self.assertIn(rdfobject, miss.preds[labelkey]['value'])
@@ -126,15 +146,31 @@ class FlaskTestCase(BaseTestCase):
         # 'clone' should have pulled added data from triplestore
         self.assertIn(labelkey, clone.preds)
         self.assertIn(rdfobject, clone.preds[labelkey]['value'])
-        miss.remove_data(graphlist=[''], predlist=predlist)
+        miss.remove_data(graphlist={''}, predlist=predlist)
         # data should no longer appear in object
         self.assertNotIn(labelkey, miss.preds)
         clone = Subject(miss.id)
         # 'clone' should no longer pull removed data from triplestore
         self.assertNotIn(labelkey, clone.preds)
 
+
+class ResourceUserTestCase(BaseTestCase):
+    """Unit tests to verify the correct behavior of Flask views and databases.
+    
+    Validate the behavior of template rendering, redirects, session management,
+    form handling, error handling, and SPARQL endpoint operations.
+    """
+
     def test_resource_user(self):
         """Verify that Users are properly defined and behaved."""
+
+
+class FlaskTestCase(BaseTestCase):
+    """Unit tests to verify the correct behavior of Flask views and databases.
+    
+    Validate the behavior of template rendering, redirects, session management,
+    form handling, error handling, and SPARQL endpoint operations.
+    """
 
     @unittest.skip('Only running backend tests')
     def test_views_get_responses(self):
