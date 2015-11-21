@@ -3,6 +3,6 @@
 
 skmf:admin a skmf:User ;
     skmf:hashpass "$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA." ;
-    skmf:active "Y" ;
+    skmf:active "1" ;
     skmf:aclgraph "users" ;
     foaf:name "Administrator"@en-us .

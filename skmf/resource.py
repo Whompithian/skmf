@@ -449,8 +449,8 @@ class User(Subject):
         username (str): Name portion of the Subject id.
     """
 
-    actkey  = app.config['NAMESPACE'] + 'active'
-    hashkey = app.config['NAMESPACE'] + 'hashpass'
+    actkey  = '{}#active'.format(app.config['NAMESPACE'])
+    hashkey = '{}#hashpass'.format(app.config['NAMESPACE'])
     namekey = 'http://xmlns.com/foaf/0.1/name'
 
     def __init__(self, username, predlist = {}):
@@ -463,10 +463,9 @@ class User(Subject):
             username (str): Unique user id, same as name portion of Subject id.
         """
         #b'$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.'
-        namespace = app.config['NAMESPACE']
-        id = namespace + username
+        id = 'skmf:{}'.format(username)
         graph = {'users'}
-        super().__init__(id=id, graphlist=graph, predlist=predlist)
+        super().__init__(id=id, type='pfx', graphlist=graph, predlist=predlist)
         self.username      = username
         self.authenticated = False
 
@@ -482,7 +481,7 @@ class User(Subject):
             A User if username was found in the triplestore, otherwise 'None'.
         """
         user = User(username)
-        if User.hashkey in user.preds and User.actkey in user.preds:
+        if User.actkey in user.preds and User.hashkey in user.preds:
             return user
         return None
 
@@ -492,7 +491,11 @@ class User(Subject):
 
     def is_active(self):
         """Return 'True' if the user is active, 'False' otherwise."""
-        return self.preds[User.actkey] == 'Y'
+        active = False
+        act_object = self.preds[User.actkey]['value'][0]
+        if act_object:
+            active = act_object['value'] != '0'
+        return active
 
     def is_anonymous(self):
         """Return 'False' - not used, but needed for Flask-Login."""
@@ -504,11 +507,13 @@ class User(Subject):
 
     def get_hash(self):
         """Return byte-string of a user's password hash."""
-        return self.preds[User.hashkey].encode()
+        hash_object = self.preds[User.hashkey]['value'][0]
+        return hash_object['value'].encode()
 
     def get_name(self):
         """Return the display name of a user."""
-        return self.preds[User.namekey]
+        name_object = self.preds[User.namekey]['value'][0]
+        return name_object['value']
 
     def set_hash(self, hashpass):
         """Replace the existing password hash with a new one.
@@ -518,15 +523,15 @@ class User(Subject):
         Args:
             hashpass (bytestring): Auth token for use in future authentication.
         """
-        newvalue = hashpass.decode('utf-8')
-        newobject = {'value': newvalue, 'type': 'literal'}
-        newpred = {User.hashkey: {'type': 'uri', 'value': [newobject]}}
+        new_value = hashpass.decode('utf-8')
+        new_object = {'value': new_value, 'type': 'literal'}
+        new_pred = {User.hashkey: {'type': 'uri', 'value': [new_object]}}
         graphlist = {'users'}
-        dropvalue = {}
+        drop_value = {}
         if User.hashkey in self.preds:
-            dropvalue[User.hashkey] = self.preds[User.hashkey]
-            self.remove_data(graphlist, dropvalue)
-        self.add_data(graphlist, newpred)
+            drop_value[User.hashkey] = self.preds[User.hashkey]
+            self.remove_data(graphlist, drop_value)
+        self.add_data(graphlist, new_pred)
 
     def set_name(self, name):
         """Replace the exisitng display name with a new one."""

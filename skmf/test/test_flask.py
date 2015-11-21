@@ -22,7 +22,7 @@ from flask.ext.login import current_user
 from flask.ext.testing import TestCase
 
 from skmf import connect_sparql, g
-from skmf.resource import Subject
+from skmf.resource import Subject, User
 import skmf.i18n.en_US as uiLabel
 
 
@@ -56,80 +56,79 @@ class BaseTestCase(TestCase):
 
 
 class SPARQLERTestCase(BaseTestCase):
-    """Unit tests to verify the correct behavior of Flask views and databases.
+    """Unit tests to verify the correct behavior of SPARQLER CRUD events.
     
-    Validate the behavior of template rendering, redirects, session management,
-    form handling, error handling, and SPARQL endpoint operations.
+    Validate the behavior of SPARQL endpoint operations.
     """
+    
+    id = 'http://localhost/skmf#admin'
+    subject = 'http://localhost/skmf#User'
 
     def test_sparql_query_subject(self):
         """Verify that subject query results are correct and complete."""
-        id = 'http://localhost/skmf#admin'
-        subject = 'http://localhost/skmf#User'
-        result = g.sparql.query_subject(id)
+        result = g.sparql.query_subject(self.id)
         # admin user not defined in the default graph
         self.assertFalse(result['results']['bindings'])
-        result = g.sparql.query_subject(subject)
+        result = g.sparql.query_subject(self.subject)
         # skmf:User is defined in the default graph
         self.assertTrue(result['results']['bindings'])
         graphs = {'users'}
-        result = g.sparql.query_subject(id, 'uri', graphs)
+        result = g.sparql.query_subject(self.id, 'uri', graphs)
         # admin user is defined in the users graph
         self.assertTrue(result['results']['bindings'])
-        result = g.sparql.query_subject(subject, 'uri', graphs)
+        result = g.sparql.query_subject(self.subject, 'uri', graphs)
         # skmf:User not defined in the users graph
         self.assertFalse(result['results']['bindings'])
         graphs.add('')
-        result = g.sparql.query_subject(subject, 'uri', graphs)
+        result = g.sparql.query_subject(self.subject, 'uri', graphs)
         # skmf:User is defined in a provided graph
         self.assertTrue(result['results']['bindings'])
         result = g.sparql.query_subject('bob', 'uri', graphs)
         # 'bob' not defined in any graphs
         self.assertFalse(result['results']['bindings'])
         graphs.add('bob')
-        result = g.sparql.query_subject(id, 'uri', graphs)
+        result = g.sparql.query_subject(self.id, 'uri', graphs)
         # addition of 'bob' graph does not hide admin user
         self.assertTrue(result['results']['bindings'])
         graphs.discard('users')
-        result = g.sparql.query_subject(id, 'uri', graphs)
+        result = g.sparql.query_subject(self.id, 'uri', graphs)
         # removal of 'users' graph does hide admin user
         self.assertFalse(result['results']['bindings'])
 
 
 class ResourceQueryTestCase(BaseTestCase):
-    """Unit tests to verify the correct behavior of Flask views and databases.
+    """Unit tests to verify the correct behavior of Query objects and methods.
     
-    Validate the behavior of template rendering, redirects, session management,
-    form handling, error handling, and SPARQL endpoint operations.
+    Validate the behavior of middleware for SPARQL endpoint operations.
     """
 
 
 class ResourceSubjectTestCase(BaseTestCase):
-    """Unit tests to verify the correct behavior of Flask views and databases.
+    """Unit tests to verify the correct behavior of RDF Subjects and methods.
     
-    Validate the behavior of template rendering, redirects, session management,
-    form handling, error handling, and SPARQL endpoint operations.
+    Validate the behavior of middleware for SPARQL endpoint operations.
     """
+    
+    id = 'http://localhost/skmf#User'
+    labelkey = 'http://www.w3.org/2000/01/rdf-schema#label'
+    missing = 'http://localhost/skmf#undefined'
+    rdfobject = {'value': 'Gone', 'type': 'literal', 'xml:lang': 'en-us'}
+    predlist = {labelkey: {'type': 'uri', 'value': [rdfobject]}}
 
     def test_resource_subject(self):
         """Verify that RDF subjects are properly defined and behaved."""
-        id = 'http://localhost/skmf#User'
-        labelkey = 'http://www.w3.org/2000/01/rdf-schema#label'
-        missing = 'http://localhost/skmf#undefined'
-        rdfobject = {'value': 'Gone', 'type': 'literal', 'xml:lang': 'en-us'}
-        predlist = {labelkey: {'type': 'uri', 'value': [rdfobject]}}
-        subject = Subject(id)
+        subject = Subject(self.id)
         # skmf:User should be read from triplestore with expected values
-        self.assertEqual(subject.id, id)
-        self.assertIn(labelkey, subject.preds)
+        self.assertEqual(subject.id, self.id)
+        self.assertIn(self.labelkey, subject.preds)
         clone = Subject(subject.id, predlist=subject.preds)
         # All values of 'clone' should match those of the copied 'subject'
         self.assertEqual(subject.id, clone.id)
         for predicate in subject.preds:
             self.assertEqual(subject.preds[predicate], clone.preds[predicate])
-        miss = Subject(missing)
+        miss = Subject(self.missing)
         # skmf:undefined should not be found in the triplestore, empty subject
-        self.assertEqual(miss.id, missing)
+        self.assertEqual(miss.id, self.missing)
         self.assertFalse(miss.preds)
         self.assertNotIn('miss', miss.graphs)
         miss.add_graphs({'miss'})
@@ -138,31 +137,45 @@ class ResourceSubjectTestCase(BaseTestCase):
         miss.remove_graphs({'miss'})
         # graph 'miss' should no longer be in 'graphs' list
         self.assertNotIn('miss', miss.graphs)
-        miss.add_data(graphlist={''}, predlist=predlist)
+        miss.add_data(graphlist={''}, predlist=self.predlist)
         # data should appear in object
-        self.assertIn(labelkey, miss.preds)
-        self.assertIn(rdfobject, miss.preds[labelkey]['value'])
+        self.assertIn(self.labelkey, miss.preds)
+        self.assertIn(self.rdfobject, miss.preds[self.labelkey]['value'])
         clone = Subject(miss.id)
         # 'clone' should have pulled added data from triplestore
-        self.assertIn(labelkey, clone.preds)
-        self.assertIn(rdfobject, clone.preds[labelkey]['value'])
-        miss.remove_data(graphlist={''}, predlist=predlist)
+        self.assertIn(self.labelkey, clone.preds)
+        self.assertIn(self.rdfobject, clone.preds[self.labelkey]['value'])
+        miss.remove_data(graphlist={''}, predlist=self.predlist)
         # data should no longer appear in object
-        self.assertNotIn(labelkey, miss.preds)
+        self.assertNotIn(self.labelkey, miss.preds)
         clone = Subject(miss.id)
         # 'clone' should no longer pull removed data from triplestore
-        self.assertNotIn(labelkey, clone.preds)
+        self.assertNotIn(self.labelkey, clone.preds)
 
 
 class ResourceUserTestCase(BaseTestCase):
-    """Unit tests to verify the correct behavior of Flask views and databases.
+    """Unit tests to verify the correct behavior of SKMF Users and methods.
     
-    Validate the behavior of template rendering, redirects, session management,
-    form handling, error handling, and SPARQL endpoint operations.
+    Validate the behavior of session management and SPARQL endpoint operations.
     """
+    
+    username = 'admin'
+    hashpass = b'$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.'
+    realname = 'Administrator'
+    graphlist = {'users'}
 
     def test_resource_user(self):
         """Verify that Users are properly defined and behaved."""
+        user = User(self.username)
+        self.assertIn(User.actkey, user.preds)
+        self.assertIn(User.hashkey, user.preds)
+        self.assertIn(User.namekey, user.preds)
+        self.assertFalse(user.is_authenticated())
+        self.assertTrue(user.is_active())
+        self.assertFalse(user.is_anonymous())
+        self.assertEqual(user.get_id(), self.username)
+        self.assertEqual(user.get_hash(), self.hashpass)
+        self.assertEqual(user.get_name(), self.realname)
 
 
 class FlaskTestCase(BaseTestCase):
