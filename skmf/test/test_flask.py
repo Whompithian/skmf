@@ -117,7 +117,78 @@ class ResourceQueryTestCase(BaseTestCase):
         constraint = {'s': {'type': 'label', 'value': {'p': {'type': 'label', 'value': [{'type': 'label', 'value': 'o'}]}}}}
         query.add_constraints(labellist={'s', 'p', 'o'}, subjectlist=constraint)
         print(query.subjects)
-        self.assertFalse(True)
+        query.remove_constraints(labellist={'s', 'p', 'o'}, subjectlist=constraint)
+        self.assertFalse(query.labels)
+        self.assertFalse(query.subjects)
+#        query.remove_graphs({'users'})
+#        constraint = {'skmf:aclgraph': {'type': 'pfx', 'value': {'a': {'type': 'pfx', 'value': [{'type': 'pfx', 'value': 'rdfs:Class'}]}, 'rdfs:label': {'type': 'pfx', 'value': [{'type': 'literal', 'value': 'ACLGraph', 'xml:lang': 'EN-US'}]}, 'rdfs:comment': {'type': 'pfx', 'value': [{'type': 'literal', 'value': 'A named graph to which another resource is permitted access.', 'xml:lang': 'EN-US'}]}, 'rdfs:isDefinedBy': {'type': 'pfx', 'value': [{'type': 'uri', 'value': 'http://localhost/skmf#'}]}}}}
+#        query.add_constraints(subjectlist=constraint)
+#        query.submit_delete()
+#        query.remove_constraints(subjectlist=constraint)
+#        constraint = {'http://localhost/skmf#id':
+#                       {'type': 'uri',
+#                        'value':
+#                         {'http://www.w3.org/2000/01/rdf-schema#comment':
+#                           {'type': 'uri',
+#                            'value':
+#                             [{'type': 'literal',
+#                               'value': 'A unique string to identify a registered user.',
+#                               'xml:lang': 'EN-US'
+#                             }]
+#                           },
+#                          'http://www.w3.org/2000/01/rdf-schema#label':
+#                           {'type': 'uri',
+#                            'value': 
+#                             [{'type': 'literal',
+#                               'value': 'UserID',
+#                               'xml:lang': 'EN-US'
+#                             }]
+#                           },
+#                          'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
+#                           {'type': 'uri',
+#                            'value':
+#                             [{'type': 'uri',
+#                               'value': 'http://www.w3.org/2000/01/rdf-schema#Class'
+#                             }]
+#                           },
+#                          'http://www.w3.org/2000/01/rdf-schema#isDefinedBy':
+#                           {'type': 'uri',
+#                            'value':
+#                             [{'type': 'uri',
+#                               'value': 'http://localhost/skmf#'
+#                             }]
+#                           }
+#                         }
+#                       },
+#                      'http://localhost/skmf#admin':
+#                       {'type': 'uri',
+#                        'value':
+#                         {'http://localhost/skmf#id':
+#                           {'type': 'uri',
+#                            'value':
+#                             [{'type': 'literal',
+#                               'value': 'admin'
+#                             }]
+#                           }
+#                         }
+#                       },
+#                      'http://localhost/skmf#User':
+#                       {'type': 'uri',
+#                        'value':
+#                         {'http://www.w3.org/2000/01/rdf-schema#member':
+#                           {'type': 'uri',
+#                            'value':
+#                             [{'type': 'uri',
+#                               'value': 'http://localhost/skmf#id'
+#                             }]
+#                           }
+#                         }
+#                       }
+#                     }
+#        query.add_constraints(subjectlist=constraint)
+#        query.submit_delete()
+#        query.remove_constraints(subjectlist=constraint)
+#        self.assertTrue(False)
 
 
 class ResourceSubjectTestCase(BaseTestCase):

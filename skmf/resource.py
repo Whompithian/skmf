@@ -258,6 +258,47 @@ class Query(object):
                             del self.subjects[subj]
         return old_labels, old_subjects
 
+    def submit_query(self):
+        """Query a SPARQL endpoint based on stored parameters.
+        
+        A general query is performed to request data from the SPARQL endpoint as described by the the 'labels' and 'subjects' attributes. Every named graph in the 'graphs' attribute is included in the query. If no exception is raised, then a JSON object containing the query results is returned.
+        
+        Returns:
+            JSON object containing the SPARQL query results, or None.
+        """
+        try:
+            return g.sparql.query_general(self.graphs, self.labels, self.subjects)
+        except:
+            return None
+
+    def submit_insert(self):
+        """Insert stored parameters in a SPARQL endpoint.
+        
+        An INSERT is performed on a SPARQL endpoint of triples as described by the 'subjects' attribute. INSERT DATA ignores labels, since it does not have a WHERE clause.
+        
+        Returns:
+            True if there were no SPARQLER errors, False otherwise.
+        """
+        try:
+            g.sparql.insert(self.graphs, self.subjects)
+            return True
+        except:
+            return False
+
+    def submit_delete(self):
+        """Delete stored parameters from a SPARQL endpoint.
+        
+        A DELETE is performed on a SPARQL endpoint of triples as described by the 'subjects' attribute. DELETE DATA ignores labels, since it does not have a WHERE clause.
+        
+        Returns:
+            True if there were no SPARQLER errors, False otherwise.
+        """
+        try:
+            g.sparql.delete(self.graphs, self.subjects)
+            return True
+        except:
+            return False
+
 
 class Subject(object):
     """JSON/TTL-like serialization of a subject described in RDF.
