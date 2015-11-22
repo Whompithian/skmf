@@ -59,8 +59,8 @@ class SPARQLER(SPARQLWrapper):
                 graphuri = namespace
             else:
                 graphuri = '{}/{}'.format(namespace, graph)
-            graphs.append('FROM <{}>\n'.format(graphuri))
-        return ''.join(graphs)
+            graphs.append('FROM <{}>'.format(graphuri))
+        return '\n        '.join(graphs)
 
     def _set_labels(self, labellist = set()):
         """Return the header string for a SPARQL query.
@@ -74,12 +74,12 @@ class SPARQLER(SPARQLWrapper):
             String of header labels for a SPARQL query.
         """
         if not labellist:
-            labels = ' *'
+            labels = '*'
         else:
             labels = []
             for label in labellist:
-                labels.append(' ?{}'.format(label))
-        return ''.join(labels)
+                labels.append('?{}'.format(label))
+        return ' '.join(labels)
 
     def _format_body(self, subjectlist = {}):
         """Format text for the body of a SPARQL query from the given subjects.
@@ -93,17 +93,11 @@ class SPARQLER(SPARQLWrapper):
             String containing the body for a SPARQL query.
         """
         body = []
-        numsubjects = len(subjectlist)
-        subjectindex = 0
         for subject in subjectlist:
-            subjectindex += 1
             sentence = self._format_subject(subject, subjectlist[subject])
             # period marks the end of a single subject match
             body.append('{} .'.format(sentence))
-            if subjectindex < numsubjects:
-                # set each subject on its own line for readability of query
-                body.append('\n')
-        return ''.join(body)
+        return '\n          '.join(body)
 
     def _format_subject(self, subject, predlist = {}):
         """Format all text for one subject of a SPARQL query.
@@ -117,26 +111,20 @@ class SPARQLER(SPARQLWrapper):
         Returns:
             String of a complete statement in the body of a SPARQL query.
         """
-        numpreds = len(predlist['value'])
-        predindex = 0
+        body = []
+        padding = ' ;\n            '
         try:
-            if predlist['type'] == 'uri':
-                body = ['<{}> '.format(subject)]
-            elif predlist['type'] == 'label':
-                body = ['?{} '.format(subject)]
-            else:
-                body = ['{} '.format(subject)]
             for predicate in predlist['value']:
-                predindex += 1
                 clause = self._format_predicate(predicate,
                                                 predlist['value'][predicate])
                 body.append(clause)
-                if predindex < numpreds:
-                    # semicolon between objects and predicates, none at end
-                    body.append(' ; ')
         except KeyError:
             raise QueryBadFormed(uiLabel.errorSpqrqlQuerySubject)
-        return ''.join(body)
+        if predlist['type'] == 'uri':
+            return '<{}> {}'.format(subject, padding.join(body))
+        elif predlist['type'] == 'label':
+            return '?{} {}'.format(subject, padding.join(body))
+        return '{} {}'.format(subject, padding.join(body))
 
     def _format_predicate(self, predicate, objectlist = {}):
         """Format all text for one predicate of a SPARQL query.
@@ -150,26 +138,20 @@ class SPARQLER(SPARQLWrapper):
         Returns:
             String of a SPARQL statement from just after the subject.
         """
+        body = []
+        padding = ' ,\n              '
         try:
-            if objectlist['type'] == 'uri':
-                body = ['<{}> '.format(predicate)]
-            elif objectlist['type'] == 'label':
-                body = ['?{} '.format(predicate)]
-            else:
-                body = ['{} '.format(predicate)]
             rdfobjects = objectlist['value']
-            numobjects = len(rdfobjects)
-            objectindex = 0
             for rdfobject in rdfobjects:
-                objectindex += 1
                 word = self._format_object(rdfobject)
                 body.append(word)
-                if objectindex < numobjects:
-                    # comma between consecutive objects, none at end
-                    body.append(' , ')
         except KeyError:
             raise QueryBadFormed(uiLabel.errorSparqlQueryPred)
-        return ''.join(body)
+        if objectlist['type'] == 'uri':
+            return '<{}> {}'.format(predicate, padding.join(body))
+        elif objectlist['type'] == 'label':
+            return '?{} {}'.format(predicate, padding.join(body))
+        return '{} {}'.format(predicate, padding.join(body))
 
     def _format_object(self, rdfobject = {}):
         """Format the text for one RDF object of a SPARQL query.
@@ -220,7 +202,7 @@ class SPARQLER(SPARQLWrapper):
         body = self._format_body(subjectlist)
         queryString = """
         {prefix}
-        SELECT DISTINCT{labels}
+        SELECT DISTINCT {labels}
         {graphs}
         WHERE {{
           {body}

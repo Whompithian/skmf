@@ -1,24 +1,39 @@
 {% extends "layout.html" %}
 {% block body %}
   <!-- Begin body block in template show_tags.html -->
+  <form action="{{ url_for('show_tags') }}" method=post class=add-entry>
+    {{ query_form.hidden_tag() }}
+    <dl>
+      <dt>{{ query_form.connection }}&nbsp;{{ query_form.resource }}
+      <dd>{{ query_form.submit }}
+    </dl>
+  </form>
   {% if current_user.is_authenticated %}
     <form action="{{ url_for('add_tag') }}" method=post class=add-entry>
-      {{ form.hidden_tag() }}
+      {{ insert_form.hidden_tag() }}
+      <table>
+      {% for subfield in insert_form.category %}
+        <tr>
+          <td>{{ subfield }}</td>
+          <td>{{ subfield.label }}</td>
+        </tr>
+      {% endfor %}
+      </table>
       <dl>
-        <dt>{{ form.label.label }}
-        <dd>{{ with_errors(form.label) }}
-        <dt>{{ form.description.label }}
-        <dd>{{ with_errors(form.description) }}
-        <dd>{{ form.submit }}
+        <dt>{{ insert_form.label.label }}
+        <dd>{{ with_errors(insert_form.label) }}
+        <dt>{{ insert_form.description.label }}
+        <dd>{{ with_errors(insert_form.description) }}
+        <dd>{{ insert_form.submit }}
       </dl>
     </form>
   {% endif %}
-  <ul class=entries>
+  {#<ul class=entries>
   {% for entry in entries['results']['bindings'] %}
     <li><h2>{{ entry['label']['value'] }}</h2>{{ entry['description']['value'] }}
   {% else %}
     <li><em>Unbelievable. No tags here so far.</em>
   {% endfor %}
-  </ul>
+  </ul>#}
   <!-- End body block in template show_tags.html -->
 {% endblock %}

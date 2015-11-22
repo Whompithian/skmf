@@ -66,6 +66,111 @@ class SPARQLERTestCase(BaseTestCase):
 
     def test_sparql_query_subject(self):
         """Verify that subject query results are correct and complete."""
+        constraint = {'http://localhost/skmf#id':
+                       {'type': 'uri',
+                        'value':
+                         {'http://www.w3.org/2000/01/rdf-schema#comment':
+                           {'type': 'uri',
+                            'value':
+                             [{'type': 'literal',
+                               'value': 'A unique string to identify a registered user.',
+                               'xml:lang': 'EN-US'
+                             },
+                             {'type': 'literal',
+                               'value': 'A unique string to identify a registered user.',
+                               'xml:lang': 'EN-US'
+                             }, 
+                             {'type': 'literal',
+                               'value': 'A unique string to identify a registered user.',
+                               'xml:lang': 'EN-US'
+                             }]
+                           },
+                          'http://www.w3.org/2000/01/rdf-schema#label':
+                           {'type': 'uri',
+                            'value': 
+                             [{'type': 'literal',
+                               'value': 'UserID',
+                               'xml:lang': 'EN-US'
+                             }]
+                           },
+                          'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
+                           {'type': 'uri',
+                            'value':
+                             [{'type': 'uri',
+                               'value': 'http://www.w3.org/2000/01/rdf-schema#Class'
+                             }]
+                           },
+                          'http://www.w3.org/2000/01/rdf-schema#isDefinedBy':
+                           {'type': 'uri',
+                            'value':
+                             [{'type': 'uri',
+                               'value': 'http://localhost/skmf#'
+                             }]
+                           }
+                         }
+                       },
+                      'http://example.com/blah#bleh':
+                       {'type': 'uri',
+                        'value':
+                         {'http://www.w3.org/2000/01/rdf-schema#comment':
+                           {'type': 'uri',
+                            'value':
+                             [{'type': 'literal',
+                               'value': 'A unique string to identify a registered user.',
+                               'xml:lang': 'EN-US'
+                             }]
+                           },
+                          'http://www.w3.org/2000/01/rdf-schema#label':
+                           {'type': 'uri',
+                            'value': 
+                             [{'type': 'literal',
+                               'value': 'UserID',
+                               'xml:lang': 'EN-US'
+                             }]
+                           },
+                          'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
+                           {'type': 'uri',
+                            'value':
+                             [{'type': 'uri',
+                               'value': 'http://www.w3.org/2000/01/rdf-schema#Class'
+                             }]
+                           },
+                          'http://www.w3.org/2000/01/rdf-schema#isDefinedBy':
+                           {'type': 'uri',
+                            'value':
+                             [{'type': 'uri',
+                               'value': 'http://localhost/skmf#'
+                             }]
+                           }
+                         }
+                       },
+                      'http://localhost/skmf#admin':
+                       {'type': 'uri',
+                        'value':
+                         {'http://localhost/skmf#id':
+                           {'type': 'uri',
+                            'value':
+                             [{'type': 'literal',
+                               'value': 'admin'
+                             }]
+                           }
+                         }
+                       },
+                      'http://localhost/skmf#User':
+                       {'type': 'uri',
+                        'value':
+                         {'http://www.w3.org/2000/01/rdf-schema#member':
+                           {'type': 'uri',
+                            'value':
+                             [{'type': 'uri',
+                               'value': 'http://localhost/skmf#id'
+                             }]
+                           }
+                         }
+                       }
+                     }
+        g.sparql.query_general({'', 'blah', 'bleh', 'bluh'}, {'bob', 'bub', 'bib'}, constraint)
+        assert False
         result = g.sparql.query_subject(self.id)
         # admin user not defined in the default graph
         self.assertFalse(result['results']['bindings'])

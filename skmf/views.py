@@ -13,26 +13,27 @@ provided data, particularly when it will be passed to an object that interacts
 with the SPARQL endpoint.
 
 Functions:
-add_tag -- Create a new tag to store with the SPARQL endpoint.
-load_user -- Retrieve a user from the triplestore for login authentication.
-login -- Authenticate and create a session for a valid user.
-logout -- Clear the session for a logged in user.
-page_not_found -- Handle user attempts to access an invalid path.
-show_tags -- Display the tags that have been defined and stored.
-show_users -- List existing users and allow new users to be created.
+    add_tag: Create a new tag to store with the SPARQL endpoint.
+    load_user: Retrieve a user from the triplestore for login authentication.
+    login: Authenticate and create a session for a valid user.
+    logout: Clear the session for a logged in user.
+    page_not_found: Handle user attempts to access an invalid path.
+    show_tags: Display the tags that have been defined and stored.
+    show_users: List existing users and allow new users to be created.
 """
 
 from flask import render_template, request, redirect, url_for, flash
-#from flask_wtf import csrf
+#from flask_wtf.csrf import CsrfProtect
 from flask.ext.bcrypt import Bcrypt
 from flask.ext.login import LoginManager, login_required, login_user, \
                             logout_user, current_user
 
 from skmf import app, forms, g
-from skmf.resource import User
+from skmf.resource import Query, User
 import skmf.i18n.en_US as uiLabel
 
 bcrypt = Bcrypt(app)
+#CsrfProtect(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -42,21 +43,47 @@ login_manager.login_view = 'login'
 @app.route('/index')
 def show_tags():
     """Use results from a form to add a tag entry to the datastore."""
-    entries = g.sparql.query_subject()
-    form = forms.AddEntryForm()
-    return render_template('show_tags.html', title=uiLabel.viewTagTitle,
-                           entries=entries, form=form)
+    general_query = Query()
+    connections = general_query.get_resources('Connection')
+    resources = general_query.get_resources('Resource')
+    query_form = forms.FindEntryForm()
+    query_form.connection.choices = [(c['resource']['value'], c['label']['value']) for c in connections]
+    query_form.resource.choices = [(r['resource']['value'], r['label']['value']) for r in resources]
+    insert_form = forms.AddEntryForm()
+    if insert_form.validate_on_submit():
+        label = query_form.label.data
+        desc = query_form.description.data
+        flash(g.sparql.sparql_insert(label, desc))
+    return render_template('show_tags.html', title=uiLabel.viewTagTitle, query_form=query_form, insert_form=insert_form)
 
 
 @app.route('/add', methods=['POST'])
 @login_required
 def add_tag():
-    form = forms.AddEntryForm()
-    if form.validate_on_submit():
-        label = form.label.data
-        desc = form.description.data
+    insert_form = forms.AddEntryForm()
+    if insert_form.validate_on_submit():
+        insert_query = Query()
+        cat = insert_form.category.data
+        label = insert_form.label.data
+        desc = insert_form.description.data
+        lang = uiLabel.ISOCode.lower()
+        insert_query.add_resource(cat, label, desc, lang)
+    return redirect(url_for('show_tags'))
+
+
+@app.route('/retrieve', methods=['POST'])
+def get_tags():
+    general_query = Query()
+    connections = general_query.get_resources('Connection')
+    resources = general_query.get_resources('Resource')
+    query_form = forms.FindEntryForm()
+    query_form.connection.choices = [(c['resource']['value'], c['label']['value']) for c in connections]
+    query_form.resource.choices = [(r['resource']['value'], r['label']['value']) for r in resources]
+    if query_form.validate_on_submit():
+        label = query_form.label.data
+        desc = query_form.description.data
         flash(g.sparql.sparql_insert(label, desc))
-    return redirect(url_for('show_tags'), form=form)
+    return redirect(url_for('show_tags'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -76,7 +103,7 @@ def login():
         else:
             user.authenticated = True
             login_user(user)
-            flash('{0!s} {1!s}'.format(uiLabel.viewLoginWelcome, user.name))
+            flash('{0!s} {1!s}'.format(uiLabel.viewLoginWelcome, user.get_name()))
             return redirect(request.args.get('next') or url_for('show_tags'))
     return render_template('login.html', title=uiLabel.viewLoginTitle,
                            form=form, error=error)

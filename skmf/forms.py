@@ -10,13 +10,14 @@ High-level field validation and sanitization are handled by the forms, but this
 does not exempt the caller from properly validating any user-provided input.
 
 Classes:
-AddEntryForm -- Form for adding a new general entry in the SPARQL endpoint.
-CreateUserForm -- Form for adding a new user in the SPARQL endpoint.
-LoginForm -- Form for users to authenticate from a Web page.
+    AddEntryForm: Form for adding a new general entry in the SPARQL endpoint.
+    CreateUserForm: Form for adding a new user in the SPARQL endpoint.
+    LoginForm: Form for users to authenticate from a Web page.
 """
 
 from flask_wtf import Form
-from wtforms import PasswordField, StringField, SubmitField, validators
+from wtforms import PasswordField, RadioField, SelectField, StringField, SubmitField, validators
+from wtforms.widgets import Select#, TableWidget
 
 import skmf.i18n.en_US as uiLabel
 
@@ -46,6 +47,18 @@ class LoginForm(Form):
     submit = SubmitField(uiLabel.formLoginSubTitle)
 
 
+class FindEntryForm(Form):
+    """Retrieve information that was stored through the SPARQL endpoint.
+    
+    This form should dynamically expand as the user selects more options.
+            It may turn out to be much more complex.
+    """
+
+    connection = SelectField(uiLabel.formEntryConnTitle, option_widget=Select)
+    resource = SelectField(uiLabel.formEntryResTitle, option_widget=Select)
+    submit = SubmitField(uiLabel.formEntrySubTitle)
+
+
 class AddEntryForm(Form):
     """Collect information to be stored through the SPARQL endpoint.
     
@@ -53,6 +66,11 @@ class AddEntryForm(Form):
             It may turn out to be much more complex.
     """
 
+    category = RadioField(uiLabel.formEntryCatTitle,
+                          choices = [('skmf:Connection',
+                                      uiLabel.formEntryCatConn),
+                                     ('skmf:Resource',
+                                      uiLabel.formEntryCatRes)])
     label = StringField(uiLabel.formEntryLabelTitle,
             [validators.InputRequired(message=uiLabel.formEntryLabelError)])
     description = StringField(uiLabel.formEntryDescTitle,

@@ -185,11 +185,8 @@ class Query(object):
             A list and dict of the components that were successfully added.
         """
         new_subjects = {}
-        new_labels = []
-        for label in labellist:
-            if label not in self.labels:
-                self.labels.add(label)
-                new_labels.append(label)
+        new_labels = labellist - self.labels
+        self.labels |= new_labels
         if subject and type:
             if subject.preds:
                 if subject.id not in self.subjects:
@@ -235,11 +232,8 @@ class Query(object):
             A list and dict of the components that were successfully removed.
         """
         old_subjects = {}
-        old_labels = []
-        for label in labellist:
-            if label in self.labels:
-                self.labels.remove(label)
-                old_labels.append(label)
+        old_labels = labellist - self.labels
+        self.labels |= old_labels
         if subject:
             if subject.id in self.subjects:
                 old_value = self._remove_preds(subject, subject.preds)
@@ -298,6 +292,45 @@ class Query(object):
             return True
         except:
             return False
+
+    def get_resources(self, category):
+        """
+        
+        Returns:
+            
+        """
+        label_list = {'resource', 'label', 'comment'}
+        resource_object = {'type': 'pfx', 'value': 'skmf:{}'.format(category)}
+        label_object = {'type': 'label', 'value': 'label'}
+        comment_object = {'type': 'label', 'value': 'comment'}
+        predicates = {'a': {'type': 'pfx', 'value': [resource_object]}}
+        predicates['rdfs:label'] = {'type': 'pfx', 'value': [label_object]}
+        predicates['rdfs:comment'] = {'type': 'pfx', 'value': [comment_object]}
+        subject = {'resource': {'type': 'label', 'value': predicates}}
+        try:
+            result = g.sparql.query_general(self.graphs, label_list, subject)
+            return result['results']['bindings']
+        except:
+            return None
+
+    def add_resource(self, category, label, desc, lang = ''):
+        """
+        
+        
+        """
+        new_id = ''.join(c for c in label if c.isalnum()).rstrip().lower()
+        id_uri = '{}#{}'.format(app.config['NAMESPACE'], new_id)
+        subject = Subject(id_uri, type='uri')
+        if not subject.preds:
+            cat_object = {'type': 'pfx', 'value': category}
+            label_object = {'type': 'literal', 'value': label}
+            desc_object = {'type': 'literal', 'value': desc}
+            if lang:
+                label_object['xml:lang'] = lang
+                desc_object['xml:lang'] = lang
+            new_preds = {'a': {'type': 'pfx', 'value': [cat_object]}}
+            new_preds['rdfs:label'] = {'type': 'pfx', 'value': [label_object]}
+            new_preds['rdfs:comment'] = {'type': 'pfx', 'value': [desc_object]}
 
 
 class Subject(object):
@@ -404,10 +437,7 @@ class Subject(object):
             The dictionary of predicates that were actually added.
         """
         new_preds = {}
-        new_graphs = []
-        for graph in graphlist:
-            if graph in self.graphs:
-                new_graphs.append(graph)
+        new_graphs = graphlist & self.graphs
         for predicate in predlist:
             if predlist[predicate]['value'] and predlist[predicate]['type']:
                 new_type = predlist[predicate]['type']
@@ -444,10 +474,7 @@ class Subject(object):
             The dictionary of predicates that were actually deleted.
         """
         old_preds = {}
-        old_graphs = []
-        for graph in graphlist:
-            if graph in self.graphs:
-                old_graphs.append(graph)
+        old_graphs = graphlist & self.graphs
         for predicate in predlist:
             if predlist[predicate]['value'] and predlist[predicate]['type']:
                 if predicate in self.preds:
