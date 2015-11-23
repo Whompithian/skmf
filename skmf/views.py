@@ -28,7 +28,7 @@ from flask.ext.bcrypt import Bcrypt
 from flask.ext.login import LoginManager, login_required, login_user, \
                             logout_user, current_user
 
-from skmf import app, forms, g
+from skmf import app, forms#, g
 from skmf.resource import Query, User
 import skmf.i18n.en_US as uiLabel
 
@@ -41,8 +41,15 @@ login_manager.login_view = 'login'
 
 @app.route('/')
 @app.route('/index')
+def welcome():
+    """"""
+    return render_template('welcome.html', title='Welcome')
+
+
+@app.route('/resources', methods=['GET', 'POST'])
 def show_tags():
     """Use results from a form to add a tag entry to the datastore."""
+    entries = None
     general_query = Query()
     rdfs_class = general_query.get_resources('rdfs:Class')
     rdf_property = general_query.get_resources('rdf:Property')
@@ -61,11 +68,17 @@ def show_tags():
     query_form.target.choices.insert(0, ('-', '---'))
     query_form.target.choices.insert(0, ('', 'Target'))
     insert_form = forms.AddEntryForm()
-#    if insert_form.validate_on_submit():
-#        label = query_form.label.data
-#        desc = query_form.description.data
-#        flash(g.sparql.sparql_insert(label, desc))
-    return render_template('show_tags.html', title=uiLabel.viewTagTitle, query_form=query_form, insert_form=insert_form)
+    if query_form.validate_on_submit():
+        rdf_object = query_form.target.data
+        if not rdf_object:
+            rdf_object = query_form.free_target.data
+        rdf_pred = query_form.connection.data
+        if not rdf_pred:
+            rdf_pred = query_form.free_conn.data
+        rdf_subject = query_form.resource.data
+        if not rdf_subject:
+            rdf_subject = query_form.free_res.data
+    return render_template('show_tags.html', title=uiLabel.viewTagTitle, entries=entries, query_form=query_form, insert_form=insert_form)
 
 
 @app.route('/add', methods=['POST'])
@@ -82,19 +95,19 @@ def add_tag():
     return redirect(url_for('show_tags'))
 
 
-@app.route('/retrieve', methods=['POST'])
-def get_tags():
-    general_query = Query()
-    connections = general_query.get_resources('Connection')
-    resources = general_query.get_resources('Resource')
-    query_form = forms.FindEntryForm()
-    query_form.connection.choices = [(c['resource']['value'], c['label']['value']) for c in connections]
-    query_form.resource.choices = [(r['resource']['value'], r['label']['value']) for r in resources]
-    if query_form.validate_on_submit():
-        label = query_form.label.data
-        desc = query_form.description.data
-        flash(g.sparql.sparql_insert(label, desc))
-    return redirect(url_for('show_tags'))
+#@app.route('/retrieve', methods=['POST'])
+#def get_tags():
+#    general_query = Query()
+#    connections = general_query.get_resources('Connection')
+#    resources = general_query.get_resources('Resource')
+#    query_form = forms.FindEntryForm()
+#    query_form.connection.choices = [(c['resource']['value'], c['label']['value']) for c in connections]
+#    query_form.resource.choices = [(r['resource']['value'], r['label']['value']) for r in resources]
+#    if query_form.validate_on_submit():
+#        label = query_form.label.data
+#        desc = query_form.description.data
+#        flash(g.sparql.sparql_insert(label, desc))
+#    return redirect(url_for('show_tags'))
 
 
 @app.route('/login', methods=['GET', 'POST'])

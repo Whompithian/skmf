@@ -19,7 +19,7 @@
   <div class=metanav>
     <a href="/">Home</a>
     {# <a href="{{ url_for('show_entries') }}">Entries</a> #}
-    <a href="{{ url_for('show_tags') }}">Tags</a>
+    <a href="{{ url_for('show_tags') }}">Resources</a>
     {% if current_user.get_id() == 'admin' %}
       <a href="{{ url_for('add_user') }}">Users</a>
     {% endif %}

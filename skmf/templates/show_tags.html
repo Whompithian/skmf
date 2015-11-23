@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
   <!-- Begin body block in template show_tags.html -->
-  <form action="{{ url_for('get_tags') }}" method=post class=add-entry>
+  <form action="{{ url_for('show_tags') }}" method=post class=add-entry>
     {{ query_form.hidden_tag() }}
     <dl>
       <dt>Find existing connections</br></br>
