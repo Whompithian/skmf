@@ -1,28 +1,47 @@
 {% extends "layout.html" %}
 {% block body %}
   <!-- Begin body block in template show_tags.html -->
-  <form action="{{ url_for('show_tags') }}" method=post class=add-entry>
+  <form action="{{ url_for('get_tags') }}" method=post class=add-entry>
     {{ query_form.hidden_tag() }}
     <dl>
-      <dt>{{ query_form.connection }}&nbsp;{{ query_form.resource }}
+      <dt>Find existing connections</br></br>
+      <dd>
+        <table>
+          <tr>
+            <td>{{ query_form.free_res(size=15) }}
+            <td>{{ query_form.free_conn(size=15) }}
+            <td>{{ query_form.free_target(size=15) }}
+          </tr>
+          <tr>
+            <td>{{ query_form.resource }}
+            <td>{{ query_form.connection }}
+            <td>{{ query_form.target }}
+          </tr>
+        </table>
       <dd>{{ query_form.submit }}
     </dl>
   </form>
   {% if current_user.is_authenticated %}
     <form action="{{ url_for('add_tag') }}" method=post class=add-entry>
       {{ insert_form.hidden_tag() }}
-      <table>
+      {#<table>
+        <tr><td>{{ insert_form.category.label }}:</td></tr>
       {% for subfield in insert_form.category %}
         <tr>
           <td>{{ subfield }}</td>
           <td>{{ subfield.label }}</td>
         </tr>
       {% endfor %}
-      </table>
+      </table>#}
       <dl>
-        <dt>{{ insert_form.label.label }}
+        <dt>Add a resource or type of connection</br></br>
+        <dt>{{ insert_form.category.label }}:
+        {% for subfield in insert_form.category %}
+          <dd>{{ subfield }}&nbsp;{{ subfield.label }}
+        {% endfor %}
+        <dt>{{ insert_form.label.label }}:
         <dd>{{ with_errors(insert_form.label) }}
-        <dt>{{ insert_form.description.label }}
+        <dt>{{ insert_form.description.label }}:
         <dd>{{ with_errors(insert_form.description) }}
         <dd>{{ insert_form.submit }}
       </dl>

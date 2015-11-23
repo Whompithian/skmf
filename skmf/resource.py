@@ -300,7 +300,7 @@ class Query(object):
             
         """
         label_list = {'resource', 'label', 'comment'}
-        resource_object = {'type': 'pfx', 'value': 'skmf:{}'.format(category)}
+        resource_object = {'type': 'pfx', 'value': category}
         label_object = {'type': 'label', 'value': 'label'}
         comment_object = {'type': 'label', 'value': 'comment'}
         predicates = {'a': {'type': 'pfx', 'value': [resource_object]}}
@@ -580,8 +580,18 @@ class User(Subject):
 
     def get_name(self):
         """Return the display name of a user."""
-        name_object = self.preds[User.namekey]['value'][0]
-        return name_object['value']
+        if User.namekey in self.preds:
+            name_object = self.preds[User.namekey]['value'][0]
+            return name_object['value']
+        return self.get_id()
+
+    def set_active(self):
+        """"""
+        if User.actkey not in self.preds:
+            new_object = {'type': 'literal', 'value': '1'}
+            new_pred = {User.actkey: {'type': 'uri', 'value': [new_object]}}
+            graphlist = {'users'}
+            self.add_data(graphlist, new_pred)
 
     def set_hash(self, hashpass):
         """Replace the existing password hash with a new one.

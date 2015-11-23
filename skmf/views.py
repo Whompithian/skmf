@@ -44,16 +44,27 @@ login_manager.login_view = 'login'
 def show_tags():
     """Use results from a form to add a tag entry to the datastore."""
     general_query = Query()
-    connections = general_query.get_resources('Connection')
-    resources = general_query.get_resources('Resource')
+    rdfs_class = general_query.get_resources('rdfs:Class')
+    rdf_property = general_query.get_resources('rdf:Property')
+    skmf_resource = general_query.get_resources('skmf:Resource')
     query_form = forms.FindEntryForm()
-    query_form.connection.choices = [(c['resource']['value'], c['label']['value']) for c in connections]
-    query_form.resource.choices = [(r['resource']['value'], r['label']['value']) for r in resources]
+    query_form.connection.choices = [(c['resource']['value'], c['label']['value']) for c in rdf_property]
+    query_form.connection.choices.insert(0, (' ', ''))
+    query_form.connection.choices.insert(0, ('-', '---'))
+    query_form.connection.choices.insert(0, ('', 'Connection'))
+    query_form.resource.choices = [(r['resource']['value'], r['label']['value']) for r in skmf_resource]
+    query_form.resource.choices.insert(0, (' ', ''))
+    query_form.resource.choices.insert(0, ('-', '---'))
+    query_form.resource.choices.insert(0, ('', 'Resource'))
+    query_form.target.choices = [(r['resource']['value'], r['label']['value']) for r in rdfs_class]
+    query_form.target.choices.insert(0, (' ', ''))
+    query_form.target.choices.insert(0, ('-', '---'))
+    query_form.target.choices.insert(0, ('', 'Target'))
     insert_form = forms.AddEntryForm()
-    if insert_form.validate_on_submit():
-        label = query_form.label.data
-        desc = query_form.description.data
-        flash(g.sparql.sparql_insert(label, desc))
+#    if insert_form.validate_on_submit():
+#        label = query_form.label.data
+#        desc = query_form.description.data
+#        flash(g.sparql.sparql_insert(label, desc))
     return render_template('show_tags.html', title=uiLabel.viewTagTitle, query_form=query_form, insert_form=insert_form)
 
 
@@ -121,14 +132,15 @@ def logout():
 
 @app.route('/users', methods=['GET', 'POST'])
 @login_required
-def show_users():
+def add_user():
     """Manage user information in the datastore."""
+    if current_user.get_id() != 'admin':
+        return redirect(url_for('show_tags'))
     form = forms.CreateUserForm()
-    if form.is_submitted() and form.validate():
-        user = User(form.username.data,
-                    bcrypt.generate_password_hash(form.password.data))
-        flash(user.get_hash())
-#    entries = query_user()
+    if form.validate_on_submit():
+        user = User(form.username.data)
+        user.set_hash(bcrypt.generate_password_hash(form.password.data))
+        user.set_active()
     return render_template('show_users.html', title=uiLabel.viewUserTitle,
                            form=form)
 

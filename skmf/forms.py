@@ -16,8 +16,8 @@ Classes:
 """
 
 from flask_wtf import Form
-from wtforms import PasswordField, RadioField, SelectField, StringField, SubmitField, validators
-from wtforms.widgets import Select#, TableWidget
+from wtforms import PasswordField, RadioField, SelectField, StringField, SubmitField, TextAreaField, validators
+#from wtforms.widgets import Select#, TableWidget
 
 import skmf.i18n.en_US as uiLabel
 
@@ -54,9 +54,16 @@ class FindEntryForm(Form):
             It may turn out to be much more complex.
     """
 
-    connection = SelectField(uiLabel.formEntryConnTitle, option_widget=Select)
-    resource = SelectField(uiLabel.formEntryResTitle, option_widget=Select)
-    submit = SubmitField(uiLabel.formEntrySubTitle)
+    connection = SelectField(label=uiLabel.formEntryConnTitle, default='',
+            validators=[validators.NoneOf((' ', '-'), message='Fail!')])
+    resource = SelectField(label=uiLabel.formEntryResTitle, default='',
+            validators=[validators.NoneOf((' ', '-'), message='Fail!')])
+    target = SelectField(label='Target', default='',
+            validators=[validators.NoneOf((' ', '-'), message='Fail!')])
+    free_conn = StringField(label='Free-form connection')
+    free_res = StringField(label='Free-form resource')
+    free_target = StringField(label='Free-form target')
+    submit = SubmitField(label='Retrieve')
 
 
 class AddEntryForm(Form):
@@ -66,16 +73,17 @@ class AddEntryForm(Form):
             It may turn out to be much more complex.
     """
 
-    category = RadioField(uiLabel.formEntryCatTitle,
+    category = RadioField(label=uiLabel.formEntryCatTitle,
+                          default = 'skmf:Connection',
                           choices = [('skmf:Connection',
                                       uiLabel.formEntryCatConn),
                                      ('skmf:Resource',
                                       uiLabel.formEntryCatRes)])
-    label = StringField(uiLabel.formEntryLabelTitle,
+    label = StringField(label=uiLabel.formEntryLabelTitle, validators=
             [validators.InputRequired(message=uiLabel.formEntryLabelError)])
-    description = StringField(uiLabel.formEntryDescTitle,
+    description = TextAreaField(label=uiLabel.formEntryDescTitle, validators=
             [validators.InputRequired(message=uiLabel.formEntryDescError)])
-    submit = SubmitField(uiLabel.formEntrySubTitle)
+    submit = SubmitField(label=uiLabel.formEntrySubTitle)
 
 
 class CreateUserForm(Form):
