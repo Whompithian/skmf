@@ -50,10 +50,10 @@ def welcome():
 def show_tags():
     """Use results from a form to add a tag entry to the datastore."""
     entries = None
-    general_query = Query()
-    rdfs_class = general_query.get_resources('rdfs:Class')
-    rdf_property = general_query.get_resources('rdf:Property')
-    skmf_resource = general_query.get_resources('skmf:Resource')
+    query = Query()
+    rdfs_class = query.get_resources('rdfs:Class')
+    rdf_property = query.get_resources('rdf:Property')
+    skmf_resource = query.get_resources('skmf:Resource')
     query_form = forms.FindEntryForm()
     query_form.connection.choices = [(c['resource']['value'], c['label']['value']) for c in rdf_property]
     query_form.connection.choices.insert(0, (' ', ''))
@@ -69,15 +69,17 @@ def show_tags():
     query_form.target.choices.insert(0, ('', 'Target'))
     insert_form = forms.AddEntryForm()
     if query_form.validate_on_submit():
-        rdf_object = query_form.target.data
-        if not rdf_object:
-            rdf_object = query_form.free_target.data
-        rdf_pred = query_form.connection.data
-        if not rdf_pred:
-            rdf_pred = query_form.free_conn.data
-        rdf_subject = query_form.resource.data
-        if not rdf_subject:
-            rdf_subject = query_form.free_res.data
+        rdf_object = [query_form.target.data, 'uri']
+        if not rdf_object[0]:
+            rdf_object = [query_form.free_target.data, 'label']
+        rdf_pred = [query_form.connection.data, 'uri']
+        if not rdf_pred[0]:
+            rdf_pred = [query_form.free_conn.data, 'label']
+        rdf_subject = [query_form.resource.data, 'uri']
+        if not rdf_subject[0]:
+            rdf_subject = [query_form.free_res.data, 'label']
+        entries = query.get_entries(rdf_subject, rdf_pred, rdf_object)
+        return redirect(url_for('show_tags', entries=entries))
     return render_template('show_tags.html', title=uiLabel.viewTagTitle, entries=entries, query_form=query_form, insert_form=insert_form)
 
 

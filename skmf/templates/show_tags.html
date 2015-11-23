@@ -21,6 +21,24 @@
       <dd>{{ query_form.submit }}
     </dl>
   </form>
+  {% if entries %}
+    <table>
+      <tr>
+        {% for label in entries[0] %}
+          <th>{{ entry }}</th>
+        {% endfor %}
+      </tr>
+      {% for entry in entries %}
+        <tr>
+          {% for label in entry %}
+            <td>{{ label['value'] }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <li><em>Unbelievable. No tags here so far.</em>
+  {% endif %}
   {% if current_user.is_authenticated %}
     <form action="{{ url_for('add_tag') }}" method=post class=add-entry>
       {{ insert_form.hidden_tag() }}

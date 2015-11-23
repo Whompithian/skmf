@@ -313,6 +313,41 @@ class Query(object):
         except:
             return None
 
+    def get_entries(self, subject, predicate, rdfobject):
+        """
+        
+        Returns:
+            
+        """
+        label_list = set()
+        new_object = {'type': rdfobject[1], 'value': rdfobject[0]}
+        new_pred = {predicate[0]: {'type': predicate[1], 'value': [new_object]}}
+        subjectlist = {subject[0]: {'type': subject[1], 'value': new_pred}}
+        self.add_constraints(labellist=label_list, subjectlist=subjectlist)
+        if subject[1] == 'label':
+            label_list.add('sublabel')
+            label_subject = {'type': 'label', 'value': 'sublabel'}
+            subject_pred = {'rdfs:label': {'type': 'pfx', 'value': [label_subject]}}
+            subjectlist[subject[0]] = {'type': 'label', 'value': subject_pred}
+        if predicate[1] == 'label':
+            label_list.add('predlabel')
+            label_pred = {'type': 'label', 'value': 'predlabel'}
+            pred_pred = {'rdfs:label': {'type': 'pfx', 'value': [label_pred]}}
+            subjectlist[predicate[0]] = {'type': 'label', 'value': pred_pred}
+        if rdfobject[1] == 'label':
+            label_list.add('objectlabel')
+            label_object = {'type': 'label', 'value': 'objectlabel'}
+            object_pred = {'rdfs:label': {'type': 'pfx', 'value': [label_object]}}
+            subjectlist[rdfobject[0]] = {'type': 'label', 'value': object_pred}
+        self.add_constraints(labellist=label_list, subjectlist=subjectlist)
+        try:
+            print(self.subjects)
+            result = self.submit_query()['results']['bindings']
+            print(result)
+            return result
+        except:
+            return None
+
     def add_resource(self, category, label, desc, lang = ''):
         """
         
