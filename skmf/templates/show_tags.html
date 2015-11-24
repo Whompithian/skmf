@@ -25,13 +25,13 @@
     <table>
       <tr>
         {% for label in entries[0] %}
-          <th>{{ entry }}</th>
+          <th>{{ label }}</th>
         {% endfor %}
       </tr>
       {% for entry in entries %}
         <tr>
           {% for label in entry %}
-            <td>{{ label['value'] }}</td>
+            <td>{{ entry[label]['value'] }}</td>
           {% endfor %}
         </tr>
       {% endfor %}

@@ -37,7 +37,7 @@ class Query(object):
             }
     """
 
-    def __init__(self, graphlist = {''}, labellist = set(), subjectlist = {}):
+    def __init__(self, graphlist = {''}, labellist = set(), subjectlist = {}, optlist = []):
         """Setup the lists and dictionary to hold the query elements.
         
         A Query may be set with empty values and still be valid. If no graphs are provided, the backend is expected to scope the query to the triplestore's default graph, represented by an empty string. If no labels are provided, the backend is expected to scope the query to 'SELECT *', which relies on the labels provided in the subject list. In any case, if no subjects are provided, any query should be expected to return an empty result set.
@@ -50,6 +50,7 @@ class Query(object):
         self.graphs = graphlist
         self.labels = labellist
         self.subjects = subjectlist
+        self.optionals = optlist
 
     def _add_preds(self, subject, predlist):
         """Add some predicates to the specified subject of this Query.
@@ -260,10 +261,10 @@ class Query(object):
         Returns:
             JSON object containing the SPARQL query results, or None.
         """
-        try:
-            return g.sparql.query_general(self.graphs, self.labels, self.subjects)
-        except:
-            return None
+#        try:
+        return g.sparql.query_general(graphlist=self.graphs, labellist=self.labels, subjectlist=self.subjects, optlist=self.optionals)
+#        except:
+#            return None
 
     def submit_insert(self):
         """Insert stored parameters in a SPARQL endpoint.
@@ -313,40 +314,54 @@ class Query(object):
         except:
             return None
 
-    def get_entries(self, subject, predicate, rdfobject):
+    def get_entries(self, entrylist = []):
         """
         
         Returns:
             
         """
         label_list = set()
-        new_object = {'type': rdfobject[1], 'value': rdfobject[0]}
-        new_pred = {predicate[0]: {'type': predicate[1], 'value': [new_object]}}
-        subjectlist = {subject[0]: {'type': subject[1], 'value': new_pred}}
-        self.add_constraints(labellist=label_list, subjectlist=subjectlist)
-        if subject[1] == 'label':
-            label_list.add('sublabel')
-            label_subject = {'type': 'label', 'value': 'sublabel'}
-            subject_pred = {'rdfs:label': {'type': 'pfx', 'value': [label_subject]}}
-            subjectlist[subject[0]] = {'type': 'label', 'value': subject_pred}
-        if predicate[1] == 'label':
-            label_list.add('predlabel')
-            label_pred = {'type': 'label', 'value': 'predlabel'}
-            pred_pred = {'rdfs:label': {'type': 'pfx', 'value': [label_pred]}}
-            subjectlist[predicate[0]] = {'type': 'label', 'value': pred_pred}
-        if rdfobject[1] == 'label':
-            label_list.add('objectlabel')
-            label_object = {'type': 'label', 'value': 'objectlabel'}
-            object_pred = {'rdfs:label': {'type': 'pfx', 'value': [label_object]}}
-            subjectlist[rdfobject[0]] = {'type': 'label', 'value': object_pred}
-        self.add_constraints(labellist=label_list, subjectlist=subjectlist)
-        try:
-            print(self.subjects)
-            result = self.submit_query()['results']['bindings']
-            print(result)
-            return result
-        except:
-            return None
+        for entry in entrylist:
+            object_type = entry['object']['type']
+            object_value = entry['object']['value']
+            if object_type == 'label':
+                label_list.add(object_value)
+            rdfobject = {'type': object_type, 'value': object_value}
+            pred_type = entry['predicate']['type']
+            pred_value = entry['predicate']['value']
+            if pred_type == 'label':
+                label_list.add(pred_value)
+            predicate = {pred_value: {'type': pred_type, 'value': [rdfobject]}}
+            subject_type = entry['subject']['type']
+            subject_value = entry['subject']['value']
+            if subject_type == 'label':
+                label_list.add(subject_value)
+            subject = {subject_value: {'type': subject_type, 'value': predicate}}
+            self.add_constraints(subjectlist=subject)
+        self.add_constraints(labellist=label_list)
+        self._set_label_constraints()
+#        try:
+        print(self.subjects)
+        result = self.submit_query()['results']['bindings']
+        print(result)
+        return result
+#        except:
+#            return None
+
+    def _set_label_constraints(self):
+        """
+        
+        
+        """
+        label_labels = []
+        for label in self.labels:
+            label_label = '{}_label'.format(label)
+            label_object = {'type': 'label', 'value': label_label}
+            label_pred = {'rdfs:label': {'type': 'pfx', 'value': [label_object]}}
+            label_subject = {label: {'type': 'label', 'value': label_pred}}
+            label_labels.append(label_label)
+            self.optionals.append(label_subject)
+        self.labels.update(set(label_labels))
 
     def add_resource(self, category, label, desc, lang = ''):
         """

@@ -113,13 +113,13 @@ class SPARQLER(SPARQLWrapper):
         """
         body = []
         padding = ' ;\n            '
-        try:
-            for predicate in predlist['value']:
-                clause = self._format_predicate(predicate,
-                                                predlist['value'][predicate])
-                body.append(clause)
-        except KeyError:
-            raise QueryBadFormed(uiLabel.errorSpqrqlQuerySubject)
+#        try:
+        for predicate in predlist['value']:
+            clause = self._format_predicate(predicate,
+                                            predlist['value'][predicate])
+            body.append(clause)
+#        except KeyError:
+#            raise QueryBadFormed(uiLabel.errorSpqrqlQuerySubject)
         if predlist['type'] == 'uri':
             return '<{}> {}'.format(subject, padding.join(body))
         elif predlist['type'] == 'label':
@@ -140,13 +140,13 @@ class SPARQLER(SPARQLWrapper):
         """
         body = []
         padding = ' ,\n              '
-        try:
-            rdfobjects = objectlist['value']
-            for rdfobject in rdfobjects:
-                word = self._format_object(rdfobject)
-                body.append(word)
-        except KeyError:
-            raise QueryBadFormed(uiLabel.errorSparqlQueryPred)
+#        try:
+        rdfobjects = objectlist['value']
+        for rdfobject in rdfobjects:
+            word = self._format_object(rdfobject)
+            body.append(word)
+#        except KeyError:
+#            raise QueryBadFormed(uiLabel.errorSparqlQueryPred)
         if objectlist['type'] == 'uri':
             return '<{}> {}'.format(predicate, padding.join(body))
         elif objectlist['type'] == 'label':
@@ -164,23 +164,36 @@ class SPARQLER(SPARQLWrapper):
         Returns:
             String of a SPARQL statement from just after one predicate.
         """
-        try:
-            if rdfobject['type'] == 'uri':
-                body = ['<{}>'.format(rdfobject['value'])]
-            elif rdfobject['type'] == 'label':
-                body = ['?{}'.format(rdfobject['value'])]
-            elif rdfobject['type'] == 'literal':
-                body = ['"{}"'.format(rdfobject['value'])]
-                if 'xml:lang' in rdfobject:
-                    body.append('@{}'.format(rdfobject['xml:lang'].lower()))
-            else:
-                body = ['{}'.format(rdfobject['value'])]
-        except KeyError:
-            raise QueryBadFormed(uiLabel.errorSparqlQueryObject)
+#        try:
+        if rdfobject['type'] == 'uri':
+            body = ['<{}>'.format(rdfobject['value'])]
+        elif rdfobject['type'] == 'label':
+            body = ['?{}'.format(rdfobject['value'])]
+        elif rdfobject['type'] == 'literal':
+            body = ['"{}"'.format(rdfobject['value'])]
+            if 'xml:lang' in rdfobject:
+                body.append('@{}'.format(rdfobject['xml:lang'].lower()))
+            elif 'datatype' in rdfobject:
+                body.append('^^{}'.format(rdfobject['datatype']))
+        else:
+            body = ['{}'.format(rdfobject['value'])]
+#        except KeyError:
+#            raise QueryBadFormed(uiLabel.errorSparqlQueryObject)
         return ''.join(body)
 
-    def query_general(self, graphlist = {''},
-                      labellist = set(), subjectlist = {}):
+    def _format_optional(self, optlist = []):
+        """
+        
+        Returns:
+            
+        """
+        optionals = []
+        for optional in optlist:
+            body = self._format_body(optional)
+            optionals.append('OPTIONAL {{ {body} }}'.format(body=body))
+        return '\n          '.join(optionals)
+
+    def query_general(self, graphlist = {''}, labellist = set(), subjectlist = {}, optlist = []):
         """Return the results of an arbitrarily complex SELECT query.
         
         A boilerplate is provided for a SELECT query. The formatting is performed by helper methods, one for each of the main sections. EVENTUALLY, this method will be generalized enough to allow most SPARQL query types.
@@ -200,24 +213,26 @@ class SPARQLER(SPARQLWrapper):
         graphs = self._set_graphs(graphlist)
         labels = self._set_labels(labellist)
         body = self._format_body(subjectlist)
+        optional = self._format_optional(optlist)
         queryString = """
         {prefix}
         SELECT DISTINCT {labels}
         {graphs}
         WHERE {{
           {body}
+          {optional}
         }}
-        """.format(prefix=prefix, labels=labels, graphs=graphs, body=body)
+        """.format(prefix=prefix, labels=labels, graphs=graphs, body=body, optional=optional)
         self.setQuery(queryString)
         print(queryString)
-        try:
-            return self.queryAndConvert()
-        except EndPointNotFound:
-            raise
-        except QueryBadFormed:
-            raise
-        except EndPointInternalError:
-            raise
+#        try:
+        return self.queryAndConvert()
+#        except EndPointNotFound:
+#            raise
+#        except QueryBadFormed:
+#            raise
+#        except EndPointInternalError:
+#            raise
 
     def query_user(self, id):
         """Deprecated: Return the values of a User from the SPARQL endpoint."""

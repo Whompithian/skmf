@@ -69,17 +69,22 @@ def show_tags():
     query_form.target.choices.insert(0, ('', 'Target'))
     insert_form = forms.AddEntryForm()
     if query_form.validate_on_submit():
-        rdf_object = [query_form.target.data, 'uri']
-        if not rdf_object[0]:
-            rdf_object = [query_form.free_target.data, 'label']
-        rdf_pred = [query_form.connection.data, 'uri']
-        if not rdf_pred[0]:
-            rdf_pred = [query_form.free_conn.data, 'label']
-        rdf_subject = [query_form.resource.data, 'uri']
-        if not rdf_subject[0]:
-            rdf_subject = [query_form.free_res.data, 'label']
-        entries = query.get_entries(rdf_subject, rdf_pred, rdf_object)
-        return redirect(url_for('show_tags', entries=entries))
+        if query_form.target.data:
+            rdf_object = {'type': 'uri', 'value': query_form.target.data}
+        else:
+            rdf_object = {'type': 'label', 'value': query_form.free_target.data}
+        if query_form.connection.data:
+            rdf_pred = {'type': 'uri', 'value': query_form.connection.data}
+        else:
+            rdf_pred = {'type': 'label', 'value': query_form.free_conn.data}
+        if query_form.resource.data:
+            rdf_subject = {'type': 'uri', 'value': query_form.resource.data}
+        else:
+            rdf_subject = {'type': 'label', 'value': query_form.free_res.data}
+        triple = {'object': rdf_object}
+        triple['predicate'] = rdf_pred
+        triple['subject'] = rdf_subject
+        entries = query.get_entries([triple])
     return render_template('show_tags.html', title=uiLabel.viewTagTitle, entries=entries, query_form=query_form, insert_form=insert_form)
 
 
