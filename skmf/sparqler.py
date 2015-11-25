@@ -17,7 +17,7 @@ from SPARQLWrapper.SPARQLExceptions import EndPointInternalError, \
                                            EndPointNotFound, QueryBadFormed
 
 from skmf import app
-import skmf.i18n.en_US as uiLabel
+#import skmf.i18n.en_US as uiLabel
 
 
 class SPARQLER(SPARQLWrapper):
@@ -182,10 +182,12 @@ class SPARQLER(SPARQLWrapper):
         return ''.join(body)
 
     def _format_optional(self, optlist = []):
-        """
+        """Format a query body section prefixed with the keyword 'OPTIONAL'.
+        
+        The use of 'OPTIONAL' allows extra information to be pulled from a query without restricting which items are returned by the main body of the query. The primary motivation of this method is to allow the rdfs:label to always be returned with any object that is returned by the query.
         
         Returns:
-            
+            String of a SPARQL OPTIONAL statement.
         """
         optionals = []
         for optional in optlist:
@@ -233,30 +235,6 @@ class SPARQLER(SPARQLWrapper):
 #            raise
 #        except EndPointInternalError:
 #            raise
-
-    def query_user(self, id):
-        """Deprecated: Return the values of a User from the SPARQL endpoint."""
-        queryString = """
-        {prefix}
-        SELECT DISTINCT ?hashpass ?active ?name 
-          WHERE {{
-            GRAPH <http://localhost/skmf/users> {{
-              skmf:{subject} a             skmf:User ;
-                             skmf:hashpass ?hashpass ; 
-                             skmf:active   ?active ;
-                             foaf:name     ?name .
-            }}
-          }}
-        """.format(prefix=app.config['PREFIXES'], subject=id)
-        self.setQuery(queryString)
-        try:
-            return self.queryAndConvert()
-        except EndPointNotFound:
-            raise
-        except QueryBadFormed:
-            raise
-        except EndPointInternalError:
-            raise
 
     def query_subject(self, id, type = 'uri', graphlist = {''}):
         """Return all predicates and objects of the subject having id.
@@ -334,47 +312,3 @@ class SPARQLER(SPARQLWrapper):
         """
         self._update(action='DELETE', graphlist=graphlist, 
                     subjectlist=subjectlist)
-
-    def sparql_insert(self, label, desc):
-        """Deprecated: Insert new data into a SPARQL endpoint."""
-        subject = ''.join(c for c in label if c.isalnum()).rstrip()
-        queryString = """
-        {prefix}
-        INSERT DATA {{
-          skmf:{subject} rdfs:label "{label}"@en-us ;
-                         rdfs:comment "{desc}"@en-us .
-        }}
-        """.format(prefix=app.config['PREFIXES'],
-                   subject=subject, label=label, desc=desc)
-        self.setQuery(queryString)
-        try:
-            self.query()
-        except EndPointNotFound:
-            raise
-        except QueryBadFormed:
-            raise
-        except EndPointInternalError:
-            raise
-
-    def sparql_delete(endpoint, label):
-        """Deprecated: Delete the specified data from a SPARQL endpoint."""
-        queryString = """
-        {prefix}
-        DELETE {{
-          ?s ?plabel ?label ;
-             ?pcomment ?comment .
-        }}
-        WHERE {{
-          ?s rdfs:label "{label}" ;
-             rdfs:comment ?comment .
-        }}
-        """.format(prefix=app.config['PREFIXES'], label=label)
-        endpoint.setQuery(queryString)
-        try:
-            endpoint.query()
-        except EndPointNotFound:
-            raise
-        except QueryBadFormed:
-            raise
-        except EndPointInternalError:
-            raise

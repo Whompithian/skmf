@@ -46,6 +46,7 @@ class Query(object):
             graphlist (set): Additional graphs to which to scope a query.
             labellist (set): Labels for the header of query results.
             subjectlist (dict): Description of query element relationships.
+            optlist (list): dicts representing optional sub-statements.
         """
         self.graphs = graphlist
         self.labels = labellist
@@ -259,7 +260,7 @@ class Query(object):
         A general query is performed to request data from the SPARQL endpoint as described by the the 'labels' and 'subjects' attributes. Every named graph in the 'graphs' attribute is included in the query. If no exception is raised, then a JSON object containing the query results is returned.
         
         Returns:
-            JSON object containing the SPARQL query results, or None.
+            Unpacked JSON object containing the SPARQL query results, or None.
         """
 #        try:
         return g.sparql.query_general(graphlist=self.graphs, labellist=self.labels, subjectlist=self.subjects, optlist=self.optionals)
@@ -295,10 +296,15 @@ class Query(object):
             return False
 
     def get_resources(self, category):
-        """
+        """Retrieve every instance of the specified category of resource.
+        
+        Resources are the main components handled by the user interface. These are used to scope and refine queries for page and form layouts to prevent the user from being overwhelmed with too many selections at one.
+        
+        Args:
+            category (str): Prefix form of a predicate for which to query.
         
         Returns:
-            
+            List of subjects that have the supplied predicate applied to them.
         """
         label_list = {'resource', 'label', 'comment'}
         resource_object = {'type': 'pfx', 'value': category}
@@ -315,10 +321,15 @@ class Query(object):
             return None
 
     def get_entries(self, entrylist = []):
-        """
+        """Retrieve the results of a query that was assembled by a user.
+        
+        The UI is expected to present the query body to the user as the opportunity to provide a set of triples. Those triples are then formed, one-by-one, into subjects that can be applied to the Query's subjects store. Each entry must be checked for type so that the list of labels can be maintained. Before running the query, _set_label_constraints() is called to ensure that rdfs:label tags will be returned whenever they are available.
+        
+        Args:
+            entrylist (list): RDF triples that combine to form a SPARQL query.
         
         Returns:
-            
+            List of results of a general query requested by the user.
         """
         label_list = set()
         for entry in entrylist:
@@ -349,9 +360,9 @@ class Query(object):
 #            return None
 
     def _set_label_constraints(self):
-        """
+        """Ensure the rdfs:label, if available, is returned with each result.
         
-        
+        The label list is effectively doubled to ensure a location to store the rdfs:label of each named placeholder in the query that has the rdfs:label value set. This increases the readability of query results for the user.
         """
         label_labels = []
         for label in self.labels:
