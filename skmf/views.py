@@ -29,7 +29,7 @@ from flask.ext.login import LoginManager, login_required, login_user, \
                             logout_user, current_user
 
 from skmf import app, forms#, g
-from skmf.resource import Query, User
+from skmf.resource import Query, Subject, User
 import skmf.i18n.en_US as uiLabel
 
 bcrypt = Bcrypt(app)
@@ -42,7 +42,7 @@ login_manager.login_view = 'login'
 @app.route('/')
 @app.route('/index')
 def welcome():
-    """"""
+    """Display a landing page with pointers on getting started with SKMF."""
     return render_template('welcome.html', title='Welcome')
 
 
@@ -84,13 +84,35 @@ def show_tags():
         triple = {'object': rdf_object}
         triple['predicate'] = rdf_pred
         triple['subject'] = rdf_subject
-        entries = query.get_entries([triple])
+        entries = []
+#        labels = []
+        temp = query.get_entries([triple])
+#        for label in temp[0]:
+#            if '_label' not in label:
+#                labels.append(label)
+#        entries.append(labels)
+        for entry in temp:
+            new_entry = {}
+            for label in entry:
+                if '_label' not in label:
+                    item = {}
+                    value = entry[label]['value']
+                    item['value'] = value
+                    if entry[label]['type'] == 'uri':
+                        uri = value
+                        item['uri'] = uri
+                    if 'value' in entry['{}_label'.format(label)]:
+                        tag = entry['{}_label'.format(label)]['value']
+                        item['tag'] = tag
+                    new_entry[label] = item
+            entries.append(new_entry)
     return render_template('show_tags.html', title=uiLabel.viewTagTitle, entries=entries, query_form=query_form, insert_form=insert_form)
 
 
 @app.route('/add', methods=['POST'])
 @login_required
 def add_tag():
+    """Add a resource or connection to the datastore."""
     insert_form = forms.AddEntryForm()
     if insert_form.validate_on_submit():
         insert_query = Query()
@@ -102,8 +124,9 @@ def add_tag():
     return redirect(url_for('show_tags'))
 
 
-#@app.route('/retrieve', methods=['POST'])
-#def get_tags():
+@app.route('/retrieve')
+def show_subject():
+    subject = Subject(request.args.get('subject'))
 #    general_query = Query()
 #    connections = general_query.get_resources('Connection')
 #    resources = general_query.get_resources('Resource')
@@ -114,11 +137,12 @@ def add_tag():
 #        label = query_form.label.data
 #        desc = query_form.description.data
 #        flash(g.sparql.sparql_insert(label, desc))
-#    return redirect(url_for('show_tags'))
+    return render_template('show_subject.html', title=subject.id, preds=subject.preds)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Setup a user session."""
     error = None
     form = forms.LoginForm()
     if form.validate_on_submit():
@@ -143,6 +167,7 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    """End a user session."""
     user = current_user
     user.authenticated = False
     logout_user()
@@ -167,6 +192,7 @@ def add_user():
 
 @app.errorhandler(404)
 def page_not_found(error):
+    """Handle attempts to access nonexistent pages."""
     return render_template('page_not_found.html'), 404
 
 
@@ -177,4 +203,5 @@ def page_not_found(error):
 
 @login_manager.user_loader
 def load_user(user_id):
+    """Create an instance of the User from the datastore, if id is found."""
     return User.get(user_id)

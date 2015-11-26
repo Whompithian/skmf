@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block body %}
+  <!-- Begin body block in template show_subject.html -->
+  <ul class=entries>
+    {% for pred in preds %}
+      <li><h2><a href="{{ url_for('show_subject', subject=pred) }}">{{ pred }}</a></h2>
+      {% for object in preds[pred]['value'] %}
+        <li>
+        {% if object['type'] == 'uri' %}
+          <a href="{{ url_for('show_subject', subject=object['value']) }}">{{ object['value'] }}</a>
+        {% else %}
+          {{ object['value'] }}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </ul>
+  <!-- End body block in template show_subject.html -->
+{% endblock %}

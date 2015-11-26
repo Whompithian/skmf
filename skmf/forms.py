@@ -74,11 +74,12 @@ class AddEntryForm(Form):
     """
 
     category = RadioField(label=uiLabel.formEntryCatTitle,
-                          default = 'skmf:Connection',
-                          choices = [('skmf:Connection',
-                                      uiLabel.formEntryCatConn),
-                                     ('skmf:Resource',
-                                      uiLabel.formEntryCatRes)])
+                          default = 'skmf:Resource',
+                          choices = [('skmf:Resource',
+                                      uiLabel.formEntryCatRes),
+                                     ('skmf:Connection',
+                                      uiLabel.formEntryCatConn)
+                                     ])
     label = StringField(label=uiLabel.formEntryLabelTitle, validators=
             [validators.InputRequired(message=uiLabel.formEntryLabelError)])
     description = TextAreaField(label=uiLabel.formEntryDescTitle, validators=

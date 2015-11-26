@@ -150,6 +150,22 @@ class Query(object):
                 old_objects.append(object)
         return old_objects
 
+    def _set_label_constraints(self):
+        """Ensure the rdfs:label, if available, is returned with each result.
+        
+        The label list is effectively doubled to ensure a location to store the rdfs:label of each named placeholder in the query that has the rdfs:label value set. This increases the readability of query results for the user.
+        """
+        label_labels = set()
+        for label in self.labels:
+            if '_label' not in label:
+                label_label = '{}_label'.format(label)
+                label_object = {'type': 'label', 'value': label_label}
+                label_pred = {'rdfs:label': {'type': 'pfx', 'value': [label_object]}}
+                label_subject = {label: {'type': 'label', 'value': label_pred}}
+                label_labels.add(label_label)
+                self.optionals.append(label_subject)
+        self.labels.update(label_labels)
+
     def add_graphs(self, graphlist):
         """Append one or more named graphs to be included in any queries.
         
@@ -359,37 +375,30 @@ class Query(object):
 #        except:
 #            return None
 
-    def _set_label_constraints(self):
-        """Ensure the rdfs:label, if available, is returned with each result.
-        
-        The label list is effectively doubled to ensure a location to store the rdfs:label of each named placeholder in the query that has the rdfs:label value set. This increases the readability of query results for the user.
-        """
-        label_labels = []
-        for label in self.labels:
-            label_label = '{}_label'.format(label)
-            label_object = {'type': 'label', 'value': label_label}
-            label_pred = {'rdfs:label': {'type': 'pfx', 'value': [label_object]}}
-            label_subject = {label: {'type': 'label', 'value': label_pred}}
-            label_labels.append(label_label)
-            self.optionals.append(label_subject)
-        self.labels.update(set(label_labels))
-
     def add_resource(self, category, label, desc, lang = ''):
-        """
+        """INSERT entries with one skmf:Resource as the subject.
         
+        Resources are assumed to have certain attributes to give them a consistent view in the user interface. They must specify a category to distinguish if they are to be treated primarily as subjects (skmf:Resource) or predicates (rdf:property). They must have rdfs:label and rdfs:comment defined to make them understandable to human users. They may optionally specify the language for string literals as an ISO language code.
         
+        Args:
+            category (str): One of skmf:Resource, rdf:property.
+            label (str): Readable name from which the id is derived.
+            desc (str): Detailed description of the new resource.
+            lang (str): ISO language code to associate with 'label' and 'desc'.
         """
         new_id = ''.join(c for c in label if c.isalnum()).rstrip().lower()
         id_uri = '{}#{}'.format(app.config['NAMESPACE'], new_id)
         subject = Subject(id_uri, type='uri')
         if not subject.preds:
-            cat_object = {'type': 'pfx', 'value': category}
+            cat_objects = [{'type': 'pfx', 'value': category}]
+            if category == 'skmf:Resource':
+                cat_objects.append({'type': 'pfx', 'value': 'rdfs:class'})
             label_object = {'type': 'literal', 'value': label}
             desc_object = {'type': 'literal', 'value': desc}
             if lang:
                 label_object['xml:lang'] = lang
                 desc_object['xml:lang'] = lang
-            new_preds = {'a': {'type': 'pfx', 'value': [cat_object]}}
+            new_preds = {'a': {'type': 'pfx', 'value': cat_objects}}
             new_preds['rdfs:label'] = {'type': 'pfx', 'value': [label_object]}
             new_preds['rdfs:comment'] = {'type': 'pfx', 'value': [desc_object]}
 
@@ -647,7 +656,7 @@ class User(Subject):
         return self.get_id()
 
     def set_active(self):
-        """"""
+        """Set the state of a user to active. No way to undo ATM."""
         if User.actkey not in self.preds:
             new_object = {'type': 'literal', 'value': '1'}
             new_pred = {User.actkey: {'type': 'uri', 'value': [new_object]}}

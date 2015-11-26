@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
   <!-- Begin body block in template show_tags.html -->
-  <form action="{{ url_for('show_tags') }}" method=post class=add-entry>
+  <form action="{{ url_for('show_tags') }}" method="post" class="add-entry">
     {{ query_form.hidden_tag() }}
     <dl>
       <dt>Find existing connections</br></br>
@@ -25,19 +25,33 @@
     <table>
       <tr>
         {% for label in entries[0] %}
-          <th>{{ label }}</th>
+          {% if '_label' not in label %}
+            <th>{{ label }}</th>
+          {% endif %}
         {% endfor %}
       </tr>
       {% for entry in entries %}
         <tr>
           {% for label in entry %}
-            <td>{{ entry[label]['value'] }}</td>
+            <td>
+            {% if 'uri' in entry[label] %}
+              <a href="{{ url_for('show_subject', subject=entry[label]['uri']) }}">
+            {% endif %}
+            {% if 'tag' in entry[label] %}
+              {{ entry[label]['tag'] }}
+            {% else %}
+              {{ entry[label]['value'] }}
+            {% endif %}
+            {% if 'uri' in entry[label] %}
+              </a>
+            {% endif %}
+            </td>
           {% endfor %}
         </tr>
       {% endfor %}
     </table>
   {% else %}
-    <li><em>Unbelievable. No tags here so far.</em>
+    <li><em>Unbelievable. No resources found so far.</em>
   {% endif %}
   {% if current_user.is_authenticated %}
     <form action="{{ url_for('add_tag') }}" method=post class=add-entry>
