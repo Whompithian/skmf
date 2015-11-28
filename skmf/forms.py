@@ -53,7 +53,6 @@ class FindEntryForm(Form):
     This form should dynamically expand as the user selects more options.
             It may turn out to be much more complex.
     """
-
     connection = SelectField(label=uiLabel.formEntryConnTitle, default='',
             validators=[validators.NoneOf((' ', '-'), message='Fail!')])
     resource = SelectField(label=uiLabel.formEntryResTitle, default='',
@@ -63,6 +62,15 @@ class FindEntryForm(Form):
     free_conn = StringField(label='Free-form connection')
     free_res = StringField(label='Free-form resource')
     free_target = StringField(label='Free-form target')
+    connection_2 = SelectField(label=uiLabel.formEntryConnTitle, default='',
+            validators=[validators.NoneOf((' ', '-'), message='Fail!')])
+    resource_2 = SelectField(label=uiLabel.formEntryResTitle, default='',
+            validators=[validators.NoneOf((' ', '-'), message='Fail!')])
+    target_2 = SelectField(label='Target', default='',
+            validators=[validators.NoneOf((' ', '-'), message='Fail!')])
+    free_conn_2 = StringField(label='Free-form connection')
+    free_res_2 = StringField(label='Free-form resource')
+    free_target_2 = StringField(label='Free-form target')
     submit = SubmitField(label='Retrieve')
 
 

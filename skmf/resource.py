@@ -71,12 +71,16 @@ class Query(object):
                 new_type = predlist[pred]['type']
                 if pred not in self.subjects[subject]['value']:
                     # to prevent KeyError at lower levels
-                    empty = {'type': new_type, 'value': []}
+                    empty = {}
+                    empty['type'] = new_type
+                    empty['value'] = []
                     self.subjects[subject]['value'][pred] = empty
                 objectlist = predlist[pred]['value']
                 new_objects = self._add_objects(subject, pred, objectlist)
                 if new_objects:
-                    new_value = {'type': new_type, 'value': new_objects}
+                    new_value = {}
+                    new_value['type'] = new_value
+                    new_value['value'] = new_objects
                     new_preds[pred] = new_value
                 # cleanup if no objects were added
                 if not self.subjects[subject]['value'][pred]['value']:
@@ -124,7 +128,9 @@ class Query(object):
                     objects = self._remove_objects(subject, pred, objectlist)
                     if objects:
                         old_type = predlist[pred]['type']
-                        old_value = {'type': old_type, 'value': objects}
+                        old_value = {}
+                        old_value['type'] = old_type
+                        old_value['value'] = objects
                         old_preds[pred] = old_value
                         if not self.subjects[subject]['value'][pred]['value']:
                             del self.subjects[subject]['value'][pred]
@@ -159,9 +165,17 @@ class Query(object):
         for label in self.labels:
             if '_label' not in label:
                 label_label = '{}_label'.format(label)
-                label_object = {'type': 'label', 'value': label_label}
-                label_pred = {'rdfs:label': {'type': 'pfx', 'value': [label_object]}}
-                label_subject = {label: {'type': 'label', 'value': label_pred}}
+                label_object = {}
+                label_object['type'] = 'label'
+                label_object['value'] = label_label
+                pred_value = {}
+                pred_value['type'] = 'pfx'
+                pred_value['value'] = [label_object]
+                label_pred = {'rdfs:label': pred_value}
+                subject_value = {}
+                subject_value['type'] = 'label'
+                subject_value['value'] = label_pred
+                label_subject = {label: subject_value}
                 label_labels.add(label_label)
                 self.optionals.append(label_subject)
         self.labels.update(label_labels)
@@ -209,11 +223,15 @@ class Query(object):
             if subject.preds:
                 if subject.id not in self.subjects:
                     # to prevent KeyError at lower levels
-                    empty = {'type': type, 'value': {}}
+                    empty = {}
+                    empty['type'] = type
+                    empty['value'] = {}
                     self.subjects[subject.id] = empty
                 new_preds = self._add_preds(subject.id, subject.preds)
                 if new_preds:
-                    new_value = {'type': type, 'value': new_preds}
+                    new_value = {}
+                    new_value['type'] = type
+                    new_value['value'] = new_preds
                     new_subjects[subject.id] = new_value
                 # cleanup if no predicates were added
                 if not self.subjects[subject.id]['value']:
@@ -223,12 +241,16 @@ class Query(object):
                 new_type = subjectlist[subj]['type']
                 if subj not in self.subjects:
                     # to prevent KeyError at lower levels
-                    empty = {'type': new_type, 'value': {}}
+                    empty = {}
+                    empty['type'] = new_type
+                    empty['value'] = {}
                     self.subjects[subj] = empty
                 predlist = subjectlist[subj]['value']
                 new_preds = self._add_preds(subj, predlist)
                 if new_preds:
-                    new_value = {'type': new_type, 'value': new_preds}
+                    new_value = {}
+                    new_value['type'] = new_type
+                    new_value['value'] = new_preds
                     new_subjects[subj] = new_value
                 # cleanup if no predicates were added
                 if not self.subjects[subj]['value']:
@@ -250,8 +272,8 @@ class Query(object):
             A list and dict of the components that were successfully removed.
         """
         old_subjects = {}
-        old_labels = labellist - self.labels
-        self.labels |= old_labels
+        old_labels = self.labels & labellist
+        self.labels -= old_labels
         if subject:
             if subject.id in self.subjects:
                 old_value = self._remove_preds(subject, subject.preds)
@@ -323,13 +345,31 @@ class Query(object):
             List of subjects that have the supplied predicate applied to them.
         """
         label_list = {'resource', 'label', 'comment'}
-        resource_object = {'type': 'pfx', 'value': category}
-        label_object = {'type': 'label', 'value': 'label'}
-        comment_object = {'type': 'label', 'value': 'comment'}
-        predicates = {'a': {'type': 'pfx', 'value': [resource_object]}}
-        predicates['rdfs:label'] = {'type': 'pfx', 'value': [label_object]}
-        predicates['rdfs:comment'] = {'type': 'pfx', 'value': [comment_object]}
-        subject = {'resource': {'type': 'label', 'value': predicates}}
+        resource_object = {}
+        resource_object['type'] = 'pfx'
+        resource_object['value'] = category
+        label_object = {}
+        label_object['type'] = 'label'
+        label_object['value'] = 'label'
+        comment_object = {}
+        comment_object['type'] = 'label'
+        comment_object['value'] = 'comment'
+        pred_value = {}
+        pred_value['type'] = 'pfx'
+        pred_value['value'] = [resource_object]
+        predicates = {'a': pred_value}
+        label_value = {}
+        label_value['type'] = 'pfx'
+        label_value['value'] = [label_object]
+        predicates['rdfs:label'] = label_value
+        comment_value = {}
+        comment_value['type'] = 'pfx'
+        comment_value['value'] = [comment_object]
+        predicates['rdfs:comment'] = comment_value
+        sub_value = {}
+        sub_value['type'] = 'label'
+        sub_value['value'] = predicates
+        subject = {'resource': sub_value}
         try:
             result = g.sparql.query_general(self.graphs, label_list, subject)
             return result['results']['bindings']
@@ -351,26 +391,38 @@ class Query(object):
         for entry in entrylist:
             object_type = entry['object']['type']
             object_value = entry['object']['value']
+            if not object_value:
+                break
             if object_type == 'label':
                 label_list.add(object_value)
-            rdfobject = {'type': object_type, 'value': object_value}
+            rdfobject = {}
+            rdfobject['type'] = object_type
+            rdfobject['value'] = object_value
             pred_type = entry['predicate']['type']
             pred_value = entry['predicate']['value']
+            if not pred_value:
+                break
             if pred_type == 'label':
                 label_list.add(pred_value)
-            predicate = {pred_value: {'type': pred_type, 'value': [rdfobject]}}
+            rdf_pred = {}
+            rdf_pred['type'] = pred_type
+            rdf_pred['value'] = [rdfobject]
+            predicate = {pred_value: rdf_pred}
             subject_type = entry['subject']['type']
             subject_value = entry['subject']['value']
+            if not subject_value:
+                break
             if subject_type == 'label':
                 label_list.add(subject_value)
-            subject = {subject_value: {'type': subject_type, 'value': predicate}}
+            rdf_subject = {}
+            rdf_subject['type'] = subject_type
+            rdf_subject['value'] = predicate
+            subject = {subject_value: rdf_subject}
             self.add_constraints(subjectlist=subject)
         self.add_constraints(labellist=label_list)
         self._set_label_constraints()
 #        try:
-        print(self.subjects)
         result = self.submit_query()['results']['bindings']
-        print(result)
         return result
 #        except:
 #            return None
@@ -390,17 +442,37 @@ class Query(object):
         id_uri = '{}#{}'.format(app.config['NAMESPACE'], new_id)
         subject = Subject(id_uri, type='uri')
         if not subject.preds:
-            cat_objects = [{'type': 'pfx', 'value': category}]
+            cat_objects = []
+            cat_object = {}
+            cat_object['type'] = 'pfx'
+            cat_object['value'] = category
+            cat_objects.append(cat_object)
             if category == 'skmf:Resource':
-                cat_objects.append({'type': 'pfx', 'value': 'rdfs:class'})
-            label_object = {'type': 'literal', 'value': label}
-            desc_object = {'type': 'literal', 'value': desc}
+                new_object = {}
+                new_object['type'] = 'pfx'
+                new_object['value'] = 'rdfs:class'
+                cat_objects.append(new_object)
+            label_object = {}
+            label_object['type'] = 'literal'
+            label_object['value'] = label
+            desc_object = {}
+            desc_object['type'] = 'literal'
+            desc_object['value'] = desc
             if lang:
                 label_object['xml:lang'] = lang
                 desc_object['xml:lang'] = lang
-            new_preds = {'a': {'type': 'pfx', 'value': cat_objects}}
-            new_preds['rdfs:label'] = {'type': 'pfx', 'value': [label_object]}
-            new_preds['rdfs:comment'] = {'type': 'pfx', 'value': [desc_object]}
+            pred_value = {}
+            pred_value['type'] = 'pfx'
+            pred_value['value'] = cat_objects
+            new_preds = {'a': pred_value}
+            label_value = {}
+            label_value['type'] = 'pfx'
+            label_value['value'] = [label_object]
+            new_preds['rdfs:label'] = label_value
+            desc_value = {}
+            desc_value['type'] = 'pfx'
+            desc_value['value'] = [desc_object]
+            new_preds['rdfs:comment'] = desc_value
 
 
 class Subject(object):
@@ -512,7 +584,9 @@ class Subject(object):
             if predlist[predicate]['value'] and predlist[predicate]['type']:
                 new_type = predlist[predicate]['type']
                 rdfobjects = predlist[predicate]['value']
-                temp = {'type': new_type, 'value': []}
+                temp = {}
+                temp['type'] = new_type
+                temp['value'] = []
                 # to avoid KeyError during iteration
                 if predicate not in self.preds:
                     self.preds[predicate] = temp
@@ -526,7 +600,10 @@ class Subject(object):
                 else:
                     del self.preds[predicate]
         if new_preds:
-            record = {self.id: {'type': self.type, 'value': new_preds}}
+            rec_value = {}
+            rec_value['type'] = self.type
+            rec_value['value'] = new_preds
+            record = {self.id: rec_value}
             g.sparql.insert(new_graphs, record)
         return new_graphs, new_preds
 
@@ -560,18 +637,20 @@ class Subject(object):
                         if not self.preds[predicate]['value']:
                             del self.preds[predicate]
         if old_preds:
-            record = {self.id: {'type': self.type, 'value': old_preds}}
+            rec_value = {}
+            rec_value['type'] = self.type
+            rec_value['value'] = old_preds
+            record = {self.id: rec_value}
             g.sparql.delete(old_graphs, record)
         return old_graphs, old_preds
 
     def update_data(self, graphlist = [], predlist = {}):
-        """"""
+        """NOT IMPLEMENTED: Perform conditional UPDATEs"""
         g.sparql.update(graphlist, predlist)
 
     def refresh_store(self):
-        g.sparql.drop_subject(self.id, *self.graphs)
-        record = {self.id: self.preds}
-        g.sparql.insert(*self.graphs, **record)
+        """NOT IMPLEMENTED: Write when the cache is stale"""
+        pass
 
 
 class User(Subject):
@@ -658,8 +737,13 @@ class User(Subject):
     def set_active(self):
         """Set the state of a user to active. No way to undo ATM."""
         if User.actkey not in self.preds:
-            new_object = {'type': 'literal', 'value': '1'}
-            new_pred = {User.actkey: {'type': 'uri', 'value': [new_object]}}
+            new_object = {}
+            new_object['type'] = 'literal'
+            new_object['value'] = '1'
+            pred_value = {}
+            pred_value['type'] = 'uri'
+            pred_value['value'] = [new_object]
+            new_pred = {User.actkey: pred_value}
             graphlist = {'users'}
             self.add_data(graphlist, new_pred)
 
@@ -672,8 +756,13 @@ class User(Subject):
             hashpass (bytestring): Auth token for use in future authentication.
         """
         new_value = hashpass.decode('utf-8')
-        new_object = {'value': new_value, 'type': 'literal'}
-        new_pred = {User.hashkey: {'type': 'uri', 'value': [new_object]}}
+        new_object = {}
+        new_object['type'] = 'literal'
+        new_object['value'] = new_value
+        pred_value = {}
+        pred_value['type'] = 'uri'
+        pred_value['value'] = [new_object]
+        new_pred = {User.hashkey: pred_value}
         graphlist = {'users'}
         drop_value = {}
         if User.hashkey in self.preds:
@@ -682,8 +771,10 @@ class User(Subject):
         self.add_data(graphlist, new_pred)
 
     def set_name(self, name):
-        """Replace the exisitng display name with a new one."""
-        nameobject = {'value': name, 'type': 'literal'}
+        """NOT IMPLEMENTED: Replace exisitng display name with new one."""
+        nameobject = {}
+        nameobject['type'] = 'literal'
+        nameobject['value'] = name
         kwargs = {User.namekey: nameobject}
         success = self.set_values(append=False, **kwargs) == 1
         if success:

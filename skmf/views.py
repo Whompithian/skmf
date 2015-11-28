@@ -50,7 +50,8 @@ def welcome():
 def show_tags():
     """Use results from a form to add a tag entry to the datastore."""
     entries = None
-    query = Query()
+    query = Query(labellist = set(), subjectlist = {}, optlist = [])
+    print(query.subjects)
     rdfs_class = query.get_resources('rdfs:Class')
     rdf_property = query.get_resources('rdf:Property')
     skmf_resource = query.get_resources('skmf:Resource')
@@ -67,30 +68,82 @@ def show_tags():
     query_form.target.choices.insert(0, (' ', ''))
     query_form.target.choices.insert(0, ('-', '---'))
     query_form.target.choices.insert(0, ('', 'Target'))
+    query_form.connection_2.choices = [(c['resource']['value'], c['label']['value']) for c in rdf_property]
+    query_form.connection_2.choices.insert(0, (' ', ''))
+    query_form.connection_2.choices.insert(0, ('-', '---'))
+    query_form.connection_2.choices.insert(0, ('', 'Connection'))
+    query_form.resource_2.choices = [(r['resource']['value'], r['label']['value']) for r in skmf_resource]
+    query_form.resource_2.choices.insert(0, (' ', ''))
+    query_form.resource_2.choices.insert(0, ('-', '---'))
+    query_form.resource_2.choices.insert(0, ('', 'Resource'))
+    query_form.target_2.choices = [(r['resource']['value'], r['label']['value']) for r in rdfs_class]
+    query_form.target_2.choices.insert(0, (' ', ''))
+    query_form.target_2.choices.insert(0, ('-', '---'))
+    query_form.target_2.choices.insert(0, ('', 'Target'))
     insert_form = forms.AddEntryForm()
     if query_form.validate_on_submit():
         if query_form.target.data:
-            rdf_object = {'type': 'uri', 'value': query_form.target.data}
+            rdf_object = {}
+            rdf_object['type'] = 'uri'
+            rdf_object['value'] = query_form.target.data
         else:
-            rdf_object = {'type': 'label', 'value': query_form.free_target.data}
+            rdf_object = {}
+            rdf_object['type'] = 'label'
+            rdf_object['value'] = query_form.free_target.data
         if query_form.connection.data:
-            rdf_pred = {'type': 'uri', 'value': query_form.connection.data}
+            rdf_pred = {}
+            rdf_pred['type'] = 'uri'
+            rdf_pred['value'] = query_form.connection.data
         else:
-            rdf_pred = {'type': 'label', 'value': query_form.free_conn.data}
+            rdf_pred = {}
+            rdf_pred['type'] = 'label'
+            rdf_pred['value'] = query_form.free_conn.data
         if query_form.resource.data:
-            rdf_subject = {'type': 'uri', 'value': query_form.resource.data}
+            rdf_subject = {}
+            rdf_subject['type'] = 'uri'
+            rdf_subject['value'] = query_form.resource.data
         else:
-            rdf_subject = {'type': 'label', 'value': query_form.free_res.data}
-        triple = {'object': rdf_object}
+            rdf_subject = {}
+            rdf_subject['type'] = 'label'
+            rdf_subject['value'] = query_form.free_res.data
+        triples = []
+        triple = {}
+        triple['object'] = rdf_object
         triple['predicate'] = rdf_pred
         triple['subject'] = rdf_subject
+        triples.append(triple)
+        if query_form.target_2.data:
+            rdf_object_2 = {}
+            rdf_object_2['type'] = 'uri'
+            rdf_object_2['value'] = query_form.target_2.data
+        else:
+            rdf_object_2 = {}
+            rdf_object_2['type'] = 'label'
+            rdf_object_2['value'] = query_form.free_target_2.data
+        if query_form.connection_2.data:
+            rdf_pred_2 = {}
+            rdf_pred_2['type'] = 'uri'
+            rdf_pred_2['value'] = query_form.connection_2.data
+        else:
+            rdf_pred_2 = {}
+            rdf_pred_2['type'] = 'label'
+            rdf_pred_2['value'] = query_form.free_conn_2.data
+        if query_form.resource_2.data:
+            rdf_subject_2 = {}
+            rdf_subject_2['type'] = 'uri'
+            rdf_subject_2['value'] = query_form.resource_2.data
+        else:
+            rdf_subject_2 = {}
+            rdf_subject_2['type'] = 'label'
+            rdf_subject_2['value'] = query_form.free_res_2.data
+        triple_2 = {}
+        triple_2['object'] = rdf_object_2
+        triple_2['predicate'] = rdf_pred_2
+        triple_2['subject'] = rdf_subject_2
+        triples.append(triple_2)
         entries = []
-#        labels = []
-        temp = query.get_entries([triple])
-#        for label in temp[0]:
-#            if '_label' not in label:
-#                labels.append(label)
-#        entries.append(labels)
+        temp = query.get_entries(triples)
+        print(query.subjects)
         for entry in temp:
             new_entry = {}
             for label in entry:
@@ -106,6 +159,8 @@ def show_tags():
                         item['tag'] = tag
                     new_entry[label] = item
             entries.append(new_entry)
+        del rdfs_class, rdf_property, skmf_resource, rdf_object, rdf_pred, rdf_subject, triple, triples, rdf_object_2, rdf_pred_2, rdf_subject_2, triple_2
+    del query
     return render_template('show_tags.html', title=uiLabel.viewTagTitle, entries=entries, query_form=query_form, insert_form=insert_form)
 
 
