@@ -2,3 +2,12 @@
 *.eric5project
 *.pyc
 flask
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.lof
+*.log
+*.pdf
+*.gz
+*.toc
