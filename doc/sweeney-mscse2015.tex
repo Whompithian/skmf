@@ -1,31 +1,7 @@
-% Documentation for University of Washington thesis LaTeX document class
-% by Jim Fox
-% fox@washington.edu
-%
-%    Revised for version 2014/11/13 of uwthesis.cls
-%
-%    This document is contained in a single file ONLY because
-%    I wanted to be able to distribute it easily.  A real thesis ought
-%    to be contained on many files (e.g., one for each chapter, at least).
-%
-%    To help you identify the files and sections in this large file
-%    I use the string '==========' to identify new files.
-%
-%    To help you ignore the unusual things I do with this sample document
-%    I try to use the notation
-%       
-%    % --- sample stuff only -----
-%    special stuff for my document, but you don't need it in your thesis
-%    % --- end-of-sample-stuff ---
-
-
-%    Printed in twoside style now that that's allowed
+% Documentation header.
 %
 
-\documentclass [12pt, proquest] {uwthesis}[2014/11/13]
-
-%
-% The following line would print the thesis in a postscript font 
+\documentclass[12pt, proquest]{uwthesis}[2014/11/13]
 
 % \usepackage{natbib}
 % \def\bibpreamble{\protect\addcontentsline{toc}{chapter}{Bibliography}}
@@ -35,26 +11,6 @@
 
 % ==========   Local defs and mods
 %
-
-% --- sample stuff only -----
-% These format the sample code in this document
-
-\usepackage{alltt}  % 
-\newenvironment{demo}
-  {\begin{alltt}\leftskip3em
-     \def\\{\ttfamily\char`\\}%
-     \def\{{\ttfamily\char`\{}%
-     \def\}{\ttfamily\char`\}}}
-  {\end{alltt}}
-
-% metafont font.  If logo not available, use the second form
-%
-% \font\mffont=logosl10 scaled\magstep1
-\let\mffont=\sf
-% --- end-of-sample-stuff ---
-
-
-
 
 \begin{document}
 
@@ -78,7 +34,7 @@
 %
 % ==========   Bibliography
 %
-%\nocite{*}   % include everything in the uwthesis.bib file
+\nocite{*}   % include everything in the uwthesis.bib file
 \bibliographystyle{plain}
 \bibliography{sweeney-mscse2015}
 
@@ -89,33 +45,6 @@
 \raggedbottom\sloppy
  
 % ========== Appendix A
- 
-\chapter{Where to find the files}
- 
-The uwthesis class file, {\tt uwthesis.cls}, contains the parameter settings,
-macro definitions, and other \TeX nical commands which
-allow \LaTeX\ to format a thesis.  
-The source to
-the document you are reading, {\tt uwthesis.tex},
-contains many formatting examples
-which you may find useful.
-The bibliography database, {\tt uwthesis.bib}, contains instructions
-to BibTeX to create and format the bibliography.
-You can find the latest of these files on:
-
-\begin{itemize}
-\item My page.
-\begin{description}
-\item[] \verb%http://staff.washington.edu/fox/tex/uwthesis.html%
-\end{description}
-
-\item CTAN
-\begin{description}
-\item[]  \verb%http://tug.ctan.org/tex-archive/macros/latex/contrib/uwthesis/%
-\item[]  (not always as up-to-date as my site)
-\end{description}
-
-\end{itemize}
 
 \vita{Brendan Sweeney is a graduate student in the Cyber Security Engineering program at the University of Washington, Bothell campus. With considerable luck, he will be the first official graduate of this program since its inception in Fall, 2013.
 }
