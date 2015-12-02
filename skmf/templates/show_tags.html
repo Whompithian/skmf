@@ -65,6 +65,26 @@
     <li><em>Unbelievable. No resources found so far.</em>
   {% endif %}
   {% if current_user.is_authenticated %}
+      <form action="{{ url_for('show_tags') }}" method="post" class="add-entry">
+        {{ update_form.hidden_tag() }}
+        <dl>
+          <dt>Insert a new connection</br></br>
+          <dd>
+            <table>
+              <tr>
+                <td>{{ update_form.rdf_subject }}
+                <td>{{ update_form.rdf_pred }}
+                <td>{{ update_form.rdf_object }}
+              </tr>
+              <tr>
+                <td>
+                <td>
+                <td>{{ update_form.free_object }}
+              </tr>
+            </table>
+          <dd>{{ update_form.submit }}
+        </dl>
+      </form>
     <form action="{{ url_for('add_tag') }}" method=post class=add-entry>
       {{ insert_form.hidden_tag() }}
       {#<table>

@@ -85,7 +85,7 @@ class AddEntryForm(Form):
                           default = 'skmf:Resource',
                           choices = [('skmf:Resource',
                                       uiLabel.formEntryCatRes),
-                                     ('skmf:Connection',
+                                     ('rdf:Property',
                                       uiLabel.formEntryCatConn)
                                      ])
     label = StringField(label=uiLabel.formEntryLabelTitle, validators=
@@ -93,6 +93,18 @@ class AddEntryForm(Form):
     description = TextAreaField(label=uiLabel.formEntryDescTitle, validators=
             [validators.InputRequired(message=uiLabel.formEntryDescError)])
     submit = SubmitField(label=uiLabel.formEntrySubTitle)
+
+
+class AddConnectionForm(Form):
+    """Collect a triple of information to insert into the SPARQL endpoint."""
+    rdf_subject = SelectField(label='Resource', default='',
+            validators=[validators.NoneOf((' ', '-'), message='Fail!')])
+    rdf_pred = SelectField(label='Property', default='',
+            validators=[validators.NoneOf((' ', '-'), message='Fail!')])
+    rdf_object = SelectField(label='Value', default='',
+            validators=[validators.NoneOf((' ', '-'), message='Fail!')])
+    free_object = TextAreaField(label='Free-form value')
+    submit = SubmitField(label='Insert')
 
 
 class CreateUserForm(Form):

@@ -22,6 +22,8 @@ Functions:
     show_users: List existing users and allow new users to be created.
 """
 
+from time import sleep
+
 from flask import render_template, request, redirect, url_for, flash
 #from flask_wtf.csrf import CsrfProtect
 from flask.ext.bcrypt import Bcrypt
@@ -50,8 +52,8 @@ def welcome():
 def show_tags():
     """Use results from a form to add a tag entry to the datastore."""
     entries = None
+    # Failure to set explicit parameters leads to broken garbage collection
     query = Query(labellist = set(), subjectlist = {}, optlist = [])
-    print(query.subjects)
     rdfs_class = query.get_resources('rdfs:Class')
     rdf_property = query.get_resources('rdf:Property')
     skmf_resource = query.get_resources('skmf:Resource')
@@ -81,6 +83,19 @@ def show_tags():
     query_form.target_2.choices.insert(0, ('-', '---'))
     query_form.target_2.choices.insert(0, ('', 'Target'))
     insert_form = forms.AddEntryForm()
+    update_form = forms.AddConnectionForm()
+    update_form.rdf_subject.choices = [(c['resource']['value'], c['label']['value']) for c in skmf_resource]
+    update_form.rdf_subject.choices.insert(0, (' ', ''))
+    update_form.rdf_subject.choices.insert(0, ('-', '---'))
+    update_form.rdf_subject.choices.insert(0, ('', 'Resource'))
+    update_form.rdf_pred.choices = [(r['resource']['value'], r['label']['value']) for r in rdf_property]
+    update_form.rdf_pred.choices.insert(0, (' ', ''))
+    update_form.rdf_pred.choices.insert(0, ('-', '---'))
+    update_form.rdf_pred.choices.insert(0, ('', 'Connection'))
+    update_form.rdf_object.choices = [(r['resource']['value'], r['label']['value']) for r in rdfs_class]
+    update_form.rdf_object.choices.insert(0, (' ', ''))
+    update_form.rdf_object.choices.insert(0, ('-', '---'))
+    update_form.rdf_object.choices.insert(0, ('', 'Target'))
     if query_form.validate_on_submit():
         if query_form.target.data:
             rdf_object = {}
@@ -143,7 +158,6 @@ def show_tags():
         triples.append(triple_2)
         entries = []
         temp = query.get_entries(triples)
-        print(query.subjects)
         for entry in temp:
             new_entry = {}
             for label in entry:
@@ -159,9 +173,28 @@ def show_tags():
                         item['tag'] = tag
                     new_entry[label] = item
             entries.append(new_entry)
-        del rdfs_class, rdf_property, skmf_resource, rdf_object, rdf_pred, rdf_subject, triple, triples, rdf_object_2, rdf_pred_2, rdf_subject_2, triple_2
-    del query
-    return render_template('show_tags.html', title=uiLabel.viewTagTitle, entries=entries, query_form=query_form, insert_form=insert_form)
+    if update_form.validate_on_submit():
+        resource = Subject(update_form.rdf_subject.data)
+        property = update_form.rdf_pred.data
+        value = update_form.rdf_object.data
+        object_type = 'uri'
+        lang = ''
+        if not value:
+            value = update_form.free_object.data
+            object_type = 'literal'
+            lang = uiLabel.ISOCode.lower()
+        rdf_object = {}
+        rdf_object['value'] = value
+        rdf_object['type'] = object_type
+        if lang:
+            rdf_object['xml:lang'] = lang
+        pred_value = {}
+        pred_value['type'] = 'uri'
+        pred_value['value'] = [rdf_object]
+        pred_list = {}
+        pred_list[property] = pred_value
+        resource.add_data(graphlist={''}, predlist=pred_list)
+    return render_template('show_tags.html', title=uiLabel.viewTagTitle, entries=entries, query_form=query_form, insert_form=insert_form, update_form=update_form)
 
 
 @app.route('/add', methods=['POST'])
@@ -170,12 +203,41 @@ def add_tag():
     """Add a resource or connection to the datastore."""
     insert_form = forms.AddEntryForm()
     if insert_form.validate_on_submit():
-        insert_query = Query()
+        insert_query = Query(labellist = set(), subjectlist = {}, optlist = [])
         cat = insert_form.category.data
         label = insert_form.label.data
         desc = insert_form.description.data
         lang = uiLabel.ISOCode.lower()
         insert_query.add_resource(cat, label, desc, lang)
+    return redirect(url_for('show_tags'))
+
+
+@app.route('/insert', methods=['POST'])
+@login_required
+def add_conn():
+    """Add a connection to an existing resource in the datastore."""
+    update_form = forms.AddConnectionForm()
+    if update_form.validate_on_submit():
+        resource = Subject(update_form.rdf_subject.data)
+        property = update_form.rdf_pred.data
+        value = update_form.rdf_object.data
+        object_type = 'uri'
+        lang = ''
+        if not value:
+            value = update_form.free_object.data
+            object_type = 'literal'
+            lang = uiLabel.ISOCode.lower()
+        rdf_object = {}
+        rdf_object['value'] = value
+        rdf_object['type'] = object_type
+        if lang:
+            rdf_object['xml:lang'] = lang
+        pred_value = {}
+        pred_value['type'] = 'uri'
+        pred_value['value'] = [rdf_object]
+        pred_list = {}
+        pred_list[property] = pred_value
+        resource.add_data(graphlist={''}, predlist=pred_list)
     return redirect(url_for('show_tags'))
 
 
@@ -204,9 +266,7 @@ def login():
         user = User.get(form.username.data)
         if not user:
             # Make invalid username take same time as wrong password
-            # Note: this may open up a denial of service vulnerability; it may
-            #        be better to use sleep(1) instead.
-            bcrypt.generate_password_hash(form.password.data)
+            sleep(1.3)
             error = uiLabel.viewLoginInvalid
         elif not bcrypt.check_password_hash(user.get_hash(), form.password.data):
             error = uiLabel.viewLoginInvalid

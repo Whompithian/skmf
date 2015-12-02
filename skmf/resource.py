@@ -450,7 +450,7 @@ class Query(object):
             if category == 'skmf:Resource':
                 new_object = {}
                 new_object['type'] = 'pfx'
-                new_object['value'] = 'rdfs:class'
+                new_object['value'] = 'rdfs:Class'
                 cat_objects.append(new_object)
             label_object = {}
             label_object['type'] = 'literal'
@@ -473,6 +473,7 @@ class Query(object):
             desc_value['type'] = 'pfx'
             desc_value['value'] = [desc_object]
             new_preds['rdfs:comment'] = desc_value
+            subject.add_data(graphlist={''}, predlist=new_preds)
 
 
 class Subject(object):
