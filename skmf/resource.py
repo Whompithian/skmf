@@ -1,6 +1,12 @@
 """skmf.resource by Brendan Sweeney, CSS 593, 2015.
 
-This module holds classes that model RDF triples and SPARQL queries. The structure of the primary data element of most classes is a dict modeled after the JSON response format for SPARQL, but with reduced redundancy inspired by the Turtle format for RDF serialization. The structure allows for valid triples and query elements with placeholders to coexist and exchange components. Most of these components are directly passable to the 'sparqler' module. ACCESS controls will be implemented using graphs as ACLs, but this is proving tricky.
+This module holds classes that model RDF triples and SPARQL queries. The
+structure of the primary data element of most classes is a dict modeled after
+the JSON response format for SPARQL, but with reduced redundancy inspired by
+the Turtle format for RDF serialization. The structure allows for valid triples
+and query elements with placeholders to coexist and exchange components. Most
+of these components are directly passable to the 'sparqler' module. ACCESS
+CONTROLS will be implemented using graphs as ACLs, but this is proving tricky.
 
 Classes:
     Query: Representation of a free-form SPARQL query or update request.
@@ -14,22 +20,41 @@ from skmf import app, g
 class Query(object):
     """Components of a free-form SPARQL query or update request.
     
-    A Query holds the relationships between resources that are to be queried from a SPARQL endpoint. A list of graphs may optionally be stored to broaden the scope of the query beyond the datastore's default graph. For the query to have meaning beyond verifying that a set of triples exists in the datastore (there are other types of query for this), a list of labels should be stored to represent the header of the query results. Each label should coincide with a <subject_label>, a <predicate_label>, or an <object_label> that appears in the 'subjects' attribute. This attribute holds a dict that describes the structure of a SPARQL query. The keyword is either the URI of the subject, if known, or a placeholder label. The value is another dict whose 'type' key specifies whether the parent keyword is a URI or label. The 'value' key points to another dict whose keywords are predicate URIs and labels. The corresponding value is a dict with a 'type' key that specifies whether the parent keyword is a URI or a label and whose 'value' key specifies a list of RDF objects as formatted for JSON. In the RDF object, 'xml:lang' is optional and 'datatype' may be provided, but it will be ignored. The 'type' and 'value' keys are required at all three levels.
+    A Query holds the relationships between resources that are to be queried
+    from a SPARQL endpoint. A list of graphs may optionally be stored to
+    broaden the scope of the query beyond the datastore's default graph. For
+    the query to have meaning beyond verifying that a set of triples exists in
+    the datastore (there are other types of query for this), a list of labels
+    should be stored to represent the header of the query results. Each label
+    should coincide with a <subject_label>, a <predicate_label>, or an
+    <object_label> that appears in the 'subjects' attribute. This attribute
+    holds a dict that describes the structure of a SPARQL query. The keyword is
+    either the URI or appropriate prefixed name of the subject, if known, or a
+    placeholder label. The value is another dict whose 'type' key specifies
+    whether the parent keyword is a URI or label. The 'value' key points to
+    another dict whose keywords are predicate URIs, prefixes, and labels. The
+    corresponding value is a dict with a 'type' key that specifies whether the
+    parent keyword is a URI or a label and whose 'value' key specifies a list
+    of RDF objects as formatted for JSON. In the RDF object, 'xml:lang' is
+    optional and 'datatype' may be provided, but is seldom needed. The 'type'
+    and 'value' keys are required at all three levels.
     
     Attributes:
         graphs (optional[list]): Graphs in which to scope queries SPARQL.
         labels (list): Header labels expected to be returned from a query.
+        optionals (list): Triples that are optional to a SPARQL query.
         subjects (dict): Triples, with placeholders, to describe the query. The
             format should be:
             {<subject_uri>|<subject_label>:
-                {'type': 'uri'|'label',
+                {'type': 'uri'|'pfx'|'label',
                  'value':
                     {<predicate_uri>|<predicate_label>:
-                        {'type': 'uri'|'label',
+                        {'type': 'uri'|'pfx'|'label',
                          'value':
-                            [{'type': 'uri'|'label'|'literal',
+                            [{'type': 'uri'|'pfx'|'label'|'literal',
                               'value': <ojbect_uri>|<object_label>|<literal>,
                               'xml:lang': <lang_string>
+                              'datatype': <xml_datatype>
                             }]
                         }
                     }
@@ -37,16 +62,23 @@ class Query(object):
             }
     """
 
-    def __init__(self, graphlist = {''}, labellist = set(), subjectlist = {}, optlist = []):
-        """Setup the lists and dictionary to hold the query elements.
+    def __init__(self, graphlist = {''}, labellist = set(),
+                 subjectlist = {}, optlist = []):
+        """Setup the local lists and dictionary to hold the query elements.
         
-        A Query may be set with empty values and still be valid. If no graphs are provided, the backend is expected to scope the query to the triplestore's default graph, represented by an empty string. If no labels are provided, the backend is expected to scope the query to 'SELECT *', which relies on the labels provided in the subject list. In any case, if no subjects are provided, any query should be expected to return an empty result set.
+        A Query may be set with empty values and still be valid. If no graphs
+        are provided, the backend is expected to scope the query to the triple-
+        store's default graph, represented by an empty string. If no labels are
+        provided, the backend is expected to scope the query to 'SELECT *',
+        which relies on the labels provided in the subject list. In any case,
+        if no subjects are provided, any query should be expected to return an
+        empty result set.
         
         Args:
             graphlist (set): Additional graphs to which to scope a query.
             labellist (set): Labels for the header of query results.
-            subjectlist (dict): Description of query element relationships.
             optlist (list): dicts representing optional sub-statements.
+            subjectlist (dict): Description of query element relationships.
         """
         self.graphs = graphlist
         self.labels = labellist
@@ -56,7 +88,15 @@ class Query(object):
     def _add_preds(self, subject, predlist):
         """Add some predicates to the specified subject of this Query.
         
-        Each predicate is added only if at least one of the RDF objects it holds can be added. The provided predicate list is checked for consistency, but it is assumed that the local subject list is already well-formed and contains the subject in the argument list. To prevent KeyError from being raised while adding objects, an empty string is paired with the 'value' key in a dict that is paired with this predicate in stored subject. If the list does not get populated, then this dict is removed. Any predicates that are successfully added are appended to a dict that is returned upon completion.
+        Each predicate is added only if at least one of the RDF objects it
+        holds can be added. The provided predicate list is checked for consist-
+        ency, but it is assumed that the local subject list is already well-
+        formed and contains the subject in the argument list. To prevent
+        KeyError from being raised while adding objects, an empty string is
+        paired with the 'value' key in a dict that is paired with the predicate
+        in a stored subject. If the list does not get populated, then this dict
+        is removed. Any predicates that are successfully added are appended to
+        a dict that is returned upon completion.
         
         Args:
             predlist (dict): Predicates and objects to add to this Query.
@@ -111,7 +151,12 @@ class Query(object):
     def _remove_preds(self, subject, predlist):
         """Remove some predicates from the specified subject of this Query.
         
-        Each predicate is removed only if all of the RDF objects it held were also removed. The provided predicate list is checked for consistency, but it is assumed that the local subject list is already well-formed and contains the subject in the argument list. Any predicates that had at least one object removed, however, are appended, along with those objects, to a dict that is returned upon completion.
+        Each predicate is removed only if all of the RDF objects it held were
+        also removed. The provided predicate list is checked for consistency,
+        but it is assumed that the local subject list is already well-formed
+        and contains the subject in the argument list. Any predicates that had
+        at least one object removed, however, are appended, along with those
+        objects, to a dict that is returned upon completion.
         
         Args:
             predlist (dict): Predicates and objects to remove from this Query.
@@ -139,7 +184,13 @@ class Query(object):
     def _remove_objects(self, subj, pred, objectlist):
         """Remove some predicates from the specified subject of this Query.
         
-        Each object is removed only if it already exists in the 'value' component of the specified predicate within the specified subject. The provided object list is checked for consistency, but it is assumed that the local subject list is already well-formed and contains the subject in the argument list, along with the corresponding predicate. Any RDF objects that are successfully removed are appended to a list that is returned upon completion.
+        Each object is removed only if it already exists in the 'value'
+        component of the specified predicate within the specified subject. The
+        provided object list is checked for consistency, but it is assumed that
+        the local subject list is already well-formed and contains the subject
+        in the argument list, along with the corresponding predicate. Any RDF
+        objects that are successfully removed are appended to a list that is
+        returned upon completion.
         
         Args:
             objectlist (list): Objects to remove from a subject and predicate.
@@ -159,7 +210,9 @@ class Query(object):
     def _set_label_constraints(self):
         """Ensure the rdfs:label, if available, is returned with each result.
         
-        The label list is effectively doubled to ensure a location to store the rdfs:label of each named placeholder in the query that has the rdfs:label value set. This increases the readability of query results for the user.
+        The label list is effectively doubled to ensure a location to store the
+        rdfs:label of each named placeholder in the query that has rdfs:label 
+        set. This increases the readability of query results for the user.
         """
         label_labels = set()
         for label in self.labels:
@@ -183,7 +236,8 @@ class Query(object):
     def add_graphs(self, graphlist):
         """Append one or more named graphs to be included in any queries.
         
-        If a graph in the provided list already exists in the local graph list, then it is ignored.
+        If a graph in the provided list already exists in the local graph list,
+        then it is ignored.
         
         Args:
             graphlist (set): New named graphs to include in future queries.
@@ -193,19 +247,28 @@ class Query(object):
     def remove_graphs(self, graphlist):
         """Remove one or more named graphs from inclusion in future queries.
         
-        If a graph in the provided list is not present in the local graph list, then it is ignored.
+        If a graph in the provided list is not present in the local graph list,
+        then it is ignored.
         
         Args:
             graphlist (set): Named graphs to exclude from future queries.
         """
-        for graph in graphlist:
-            self.graphs.discard(graph)
+        self.graphs.difference_update(graphlist)
 
     def add_constraints(self, subject = None, type = None,
                        labellist = set(), subjectlist = {}):
         """Add placeholders and relationship constraints to refine a query.
         
-        New constraints may be provided as a combination of a Subject class object and a dict of subjects as stored by the Query class. The former requires the presence of the 'type' argument. Typically, entries in the label list will coincide with the Subject id - if provided and if type = 'label' - or with a <subject_label>, a <predicate_label>, or an <object_label> that appears in the subject list, though this need not be the case. Labels may be provided on their own, for instance, if one was previously omitted by mistake. Only the smallest non-matching component of each argument is added. Any element of an argument that already exists in this Query is silently ignored.
+        New constraints may be provided as a combination of a Subject class
+        object and a dict of subjects as stored by the Query class. The former
+        requires the presence of the 'type' argument. Typically, entries in the
+        label list will coincide with the Subject id - if provided and if
+        type = 'label' - or with a <subject_label>, a <predicate_label>, or an
+        <object_label> that appears in the subject list, though this need not
+        be the case. Labels may be provided on their own, for instance, if one
+        was previously omitted by mistake. Only the smallest non-matching
+        component of each argument is added. Any element of an argument that
+        already exists in this Query is silently ignored.
         
         Args:
             labellist (set): Labels for the header of query results.
@@ -217,8 +280,8 @@ class Query(object):
             A list and dict of the components that were successfully added.
         """
         new_subjects = {}
-        new_labels = labellist - self.labels
-        self.labels |= new_labels
+        new_labels = labellist.difference(self.labels)
+        self.labels.update(new_labels)
         if subject and type:
             if subject.preds:
                 if subject.id not in self.subjects:
@@ -261,7 +324,11 @@ class Query(object):
                           labellist = set(), subjectlist = {}):
         """Remove placeholder and relationship constraints from a query.
         
-        Unlike with addition, removal does not require a type to be specified for a Subject, since the 'subjects' dict guarantees the uniqueness of its id. Only the smallest matching component of each argument is added. Any element of an argument that does not already exist in this Query is silently ignored.
+        Unlike with addition, removal does not require a type to be specified
+        for a Subject, since the 'subjects' dict guarantees the uniqueness of
+        its id. Only the smallest matching component of each argument is
+        removed. Any element of an argument that does not already exist in this
+        Query is silently ignored.
         
         Args:
             labellist (set): Labels for the header of query results.
@@ -272,8 +339,8 @@ class Query(object):
             A list and dict of the components that were successfully removed.
         """
         old_subjects = {}
-        old_labels = self.labels & labellist
-        self.labels -= old_labels
+        old_labels = self.labels.intersection(labellist)
+        self.labels.difference_update(old_labels)
         if subject:
             if subject.id in self.subjects:
                 old_value = self._remove_preds(subject, subject.preds)
@@ -295,48 +362,53 @@ class Query(object):
     def submit_query(self):
         """Query a SPARQL endpoint based on stored parameters.
         
-        A general query is performed to request data from the SPARQL endpoint as described by the the 'labels' and 'subjects' attributes. Every named graph in the 'graphs' attribute is included in the query. If no exception is raised, then a JSON object containing the query results is returned.
+        A general query is performed to request data from the SPARQL endpoint
+        as described by the the 'labels' and 'subjects' attributes. Every named
+        graph in the 'graphs' attribute is included in the query. If no
+        exception is raised, then a JSON object containing the query results is
+        returned.
         
         Returns:
             Unpacked JSON object containing the SPARQL query results, or None.
         """
-#        try:
-        return g.sparql.query_general(graphlist=self.graphs, labellist=self.labels, subjectlist=self.subjects, optlist=self.optionals)
-#        except:
-#            return None
+        return g.sparql.query_general(graphlist=self.graphs,
+                                      labellist=self.labels,
+                                      subjectlist=self.subjects,
+                                      optlist=self.optionals)
 
     def submit_insert(self):
         """Insert stored parameters in a SPARQL endpoint.
         
-        An INSERT is performed on a SPARQL endpoint of triples as described by the 'subjects' attribute. INSERT DATA ignores labels, since it does not have a WHERE clause.
+        An INSERT is performed on a SPARQL endpoint of triples as described by
+        the 'subjects' attribute. INSERT DATA ignores labels, since it does not
+        have a WHERE clause.
         
         Returns:
             True if there were no SPARQLER errors, False otherwise.
         """
-        try:
-            g.sparql.insert(self.graphs, self.subjects)
-            return True
-        except:
-            return False
+        return g.sparql.insert(graphlist=self.graphs,
+                               subjectlist=self.subjects)
 
     def submit_delete(self):
         """Delete stored parameters from a SPARQL endpoint.
         
-        A DELETE is performed on a SPARQL endpoint of triples as described by the 'subjects' attribute. DELETE DATA ignores labels, since it does not have a WHERE clause.
+        A DELETE is performed on a SPARQL endpoint of triples as described by
+        the 'subjects' attribute. DELETE DATA ignores labels, since it does not
+        have a WHERE clause.
         
         Returns:
             True if there were no SPARQLER errors, False otherwise.
         """
-        try:
-            g.sparql.delete(self.graphs, self.subjects)
-            return True
-        except:
-            return False
+        return g.sparql.delete(graphlist=self.graphs,
+                               subjectlist=self.subjects)
 
     def get_resources(self, category):
         """Retrieve every instance of the specified category of resource.
         
-        Resources are the main components handled by the user interface. These are used to scope and refine queries for page and form layouts to prevent the user from being overwhelmed with too many selections at one.
+        Resources are the main components handled by the user interface. These
+        are used to scope and refine queries for page and form layouts to
+        prevent the user from being overwhelmed with too many selections at
+        once.
         
         Args:
             category (str): Prefix form of a predicate for which to query.
@@ -370,16 +442,23 @@ class Query(object):
         sub_value['type'] = 'label'
         sub_value['value'] = predicates
         subject = {'resource': sub_value}
-        try:
-            result = g.sparql.query_general(self.graphs, label_list, subject)
+        result = g.sparql.query_general(graphlist=self.graphs,
+                                        labellist=label_list,
+                                        subjectlist=subject)
+        if result:
             return result['results']['bindings']
-        except:
-            return None
+        return None
 
     def get_entries(self, entrylist = []):
         """Retrieve the results of a query that was assembled by a user.
         
-        The UI is expected to present the query body to the user as the opportunity to provide a set of triples. Those triples are then formed, one-by-one, into subjects that can be applied to the Query's subjects store. Each entry must be checked for type so that the list of labels can be maintained. Before running the query, _set_label_constraints() is called to ensure that rdfs:label tags will be returned whenever they are available.
+        The UI is expected to present the query body to the user as the
+        opportunity to provide a set of triples. Those triples are then formed,
+        one-by-one, into subjects that can be applied to the Query's 'subjects'
+        store. Each entry must be checked for type so that the list of labels
+        can be maintained. Before running the query, _set_label_constraints()
+        is called to ensure that rdfs:label tags will be returned whenever they
+        are available.
         
         Args:
             entrylist (list): RDF triples that combine to form a SPARQL query.
@@ -421,21 +500,23 @@ class Query(object):
             self.add_constraints(subjectlist=subject)
         self.add_constraints(labellist=label_list)
         self._set_label_constraints()
-#        try:
-        result = self.submit_query()['results']['bindings']
-        return result
-#        except:
-#            return None
+        return self.submit_query()['results']['bindings']
 
     def add_resource(self, category, label, desc, lang = ''):
         """INSERT entries with one skmf:Resource as the subject.
         
-        Resources are assumed to have certain attributes to give them a consistent view in the user interface. They must specify a category to distinguish if they are to be treated primarily as subjects (skmf:Resource) or predicates (rdf:property). They must have rdfs:label and rdfs:comment defined to make them understandable to human users. They may optionally specify the language for string literals as an ISO language code.
+        Resources are assumed to have certain attributes to give them a
+        consistent view in the user interface. They must specify a category to
+        distinguish if they are to be treated primarily as subjects
+        (skmf:Resource) or predicates (rdf:Property). They must have rdfs:label
+        and rdfs:comment defined to make them understandable to human users.
+        They may optionally specify the language for string literals as an ISO
+        language code.
         
         Args:
             category (str): One of skmf:Resource, rdf:property.
-            label (str): Readable name from which the id is derived.
             desc (str): Detailed description of the new resource.
+            label (str): Readable name from which the id is derived.
             lang (str): ISO language code to associate with 'label' and 'desc'.
         """
         new_id = ''.join(c for c in label if c.isalnum()).rstrip().lower()
@@ -473,34 +554,50 @@ class Query(object):
             desc_value['type'] = 'pfx'
             desc_value['value'] = [desc_object]
             new_preds['rdfs:comment'] = desc_value
-            subject.add_data(graphlist={''}, predlist=new_preds)
+            return subject.add_data(graphlist={''}, predlist=new_preds)
 
 
 class Subject(object):
     """JSON/TTL-like serialization of a subject described in RDF.
     
-    An instance of a Subject typically encompasses all of the predicates and associated RDF objects that describe one RDF subject in a triplestore. It may also store just a subset of that information or the elements of a query that pertain to a single subject, either by URI or through a placeholder label. The 'type' attribute is used to specify which and the 'id' attribute holds the actual URI or label string. A list of graphs may also be maintained to specify which graphs are part of any query that is performed on the Subject.
+    An instance of a Subject typically encompasses all of the predicates and
+    associated RDF objects that describe one RDF subject in a triplestore. It
+    may also store just a subset of that information or the elements of a query
+    that pertain to a single subject, either by URI or through a placeholder
+    label. The 'type' attribute is used to specify which and the 'id' attribute
+    holds the actual URI or label string. A list of graphs may also be
+    maintained to specify which graphs are part of any query that is performed
+    on the Subject.
     
     Attributes:
         id (str): URI or label that identifies this Subject in a query.
         graphs (list): Graphs in which to scope queries for this Subject.
-        preds (dict): Predicates and objects that describe this Subject. The format should match that of the second inner dict in Query, with the predicate id as the key:
+        preds (dict): Predicates and objects that describe this Subject. The
+            format should match that of the second inner dict in Query, with
+            the predicate id as the key:
             {<predicate_uri>|<predicate_label>:
-                {'type': 'uri'|'label',
+                {'type': 'uri'|'pfx'|'label',
                  'value':
-                    [{'type': 'uri'|'label'|'literal',
+                    [{'type': 'uri'|'pfx'|'label'|'literal',
                       'value': <ojbect_uri>|<object_label>|<literal>,
                       'xml:lang': <lang_string>
                     }]
                 }
             }
-        type (str): How to interpret the id, one of 'uri', 'label', or 'NONE'.
+        type (str): How to interpret the id, one of 'uri', 'pfx', or 'label'.
     """
 
     def __init__(self, id, type = 'uri', graphlist = set(), predlist = {}):
         """Setup using defaults, provided values, or from the triplestore.
         
-        If no predicate list is provided and 'type' is set to 'uri' - the default - then it is assumed that this Subject should be retrieved from the provided list of graphs based on the 'id' argument. This assumption is made to prevent the formation of a Subject that already exists in the triplestore but is treated as a new RDF subject. The only way to override this behavior is to set 'type' to something other than 'uri', although it is not recommended to use 'label' since that already has another meaning.
+        If no predicate list is provided and 'type' is set to 'uri' - the
+        default - then it is assumed that this Subject should be retrieved from
+        the provided list of graphs based on the 'id' argument. This assumption
+        is made to prevent the formation of a Subject that already exists in
+        the triplestore but is treated as a new RDF subject. The only way to
+        override this behavior is to set 'type' to something other than 'uri',
+        although it is not recommended to use 'label' since that already has
+        another meaning.
         
         Args:
             graphlist (set): Named graphs to which a subject may belong.
@@ -518,9 +615,13 @@ class Subject(object):
             self.preds = self._init_values(results)
 
     def _init_values(self, results):
-        """Returns all triples about this subject from a triplestore.
+        """Returns all triples about this subject retrieved from a triplestore.
         
-        The input is expected to follow the JSON syntax for SPARQL query responses. Moreover, it is exptected to contain 'p' and 'o' labels, representing the predicates and objects, respectively, that make up RDF triples that contain this Subject as their subject. If the wrong information is passed in, then an invalid Subject may be formed.
+        The input is expected to follow the JSON syntax for SPARQL query
+        responses. Moreover, it is exptected to contain 'p' and 'o' labels,
+        representing the predicates and objects, respectively, that make up RDF
+        triples that contain this Subject as their subject. If the wrong
+        information is passed in, then an invalid Subject may be formed.
         
         Args:
             results (dict): JSON format results of SPARQL query for a subject.
@@ -541,14 +642,16 @@ class Subject(object):
                         predlist[predicate] = value
                     elif rdfobject not in predlist[predicate]['value']:
                         predlist[predicate]['value'].append(rdfobject)
-            except KeyError:
-                pass
+            except KeyError as e:
+                print(__name__, str(e))
+                return None
         return predlist
 
     def add_graphs(self, graphlist):
         """Append new graphs to the list of graphs to query for this subject.
         
-        If a graph in the provided list is not present in the local graph list, then it is ignored.
+        If a graph in the provided list is not present in the local graph list,
+        then it is ignored.
         
         Args:
             graphlist (set): Short names of named graphs in the triplestore.
@@ -558,18 +661,21 @@ class Subject(object):
     def remove_graphs(self, graphlist):
         """Remove a graph from the list of graphs to query for this subject.
         
-        If a graph in the provided list is not present in the local graph list, then it is ignored.
+        If a graph in the provided list is not present in the local graph list,
+        then it is ignored.
         
         Args:
             graphlist (set): Short names of named graphs in the triplestore.
         """
-        for graph in graphlist:
-            self.graphs.discard(graph)
+        self.graphs.difference_update(graphlist)
 
-    def add_data(self, graphlist = set(), predlist = {}):
+    def add_data(self, graphlist, predlist = {}):
         """Add new triples that describe this subject to the triplestore.
         
-        The provided graph list is used to determine to which graphs triples are added, but any graphs that are not attributed to this Subject are ignored to support access control mechanisms. No default graph is provided for INSERTs, so this list should not be empty.
+        The provided graph list is used to determine to which graphs triples
+        are added, but any graphs that are not attributed to this Subject are
+        ignored in order to support access control mechanisms. No default graph
+        is provided for INSERTs, so this list must not be empty.
         
         Params:
             graphlist (set): Named graphs that should hold the new triples.
@@ -580,7 +686,7 @@ class Subject(object):
             The dictionary of predicates that were actually added.
         """
         new_preds = {}
-        new_graphs = graphlist & self.graphs
+        new_graphs = self.graphs.intersection(graphlist)
         for predicate in predlist:
             if predlist[predicate]['value'] and predlist[predicate]['type']:
                 new_type = predlist[predicate]['type']
@@ -608,10 +714,13 @@ class Subject(object):
             g.sparql.insert(new_graphs, record)
         return new_graphs, new_preds
 
-    def remove_data(self, graphlist = set(), predlist = {}):
+    def remove_data(self, graphlist, predlist = {}):
         """Delete triples for this subject from some graphs in the triplestore.
         
-        The provided graph list is used to determine from which graphs triples are deleted, but any graphs that are not attributed to this Subject are ignored to support access control mechanisms. No default graph is provided for DELETEs, so this list should not be empty.
+        The provided graph list is used to determine from which graphs triples
+        are deleted, but any graphs that are not attributed to this Subject are
+        ignored in order to support access control mechanisms. No default graph
+        is provided for DELETEs, so this list must not be empty.
         
         Params:
             graphlist (set): Named graphs from which to delete triples.
@@ -622,7 +731,7 @@ class Subject(object):
             The dictionary of predicates that were actually deleted.
         """
         old_preds = {}
-        old_graphs = graphlist & self.graphs
+        old_graphs = self.graphs.intersection(graphlist)
         for predicate in predlist:
             if predlist[predicate]['value'] and predlist[predicate]['type']:
                 if predicate in self.preds:
@@ -657,14 +766,22 @@ class Subject(object):
 class User(Subject):
     """Wrapper around a subject for use in front-ends with user sessions.
     
-    Hold user identifiers and access rights. This class assumes that user data will be kept in a triplestore alongside other data. User data should be considered sensitive. Passwords should be hashed before they are passed to the User object, preferably with an algorithm that is meant for generating secure password hashes. Other fields may have encrypted values passed to them, so long as the encoding of those values can be read by the attached SPARQL endpoint. id must be a unicode string and it must be unique for each user. Since this system does not allow users to authenticate anonymously, a User must have a hashpass value.
+    Hold user identifiers and access rights. This class assumes that user data
+    will be kept in a triplestore alongside other data. User data should be
+    considered sensitive. Passwords should be hashed before they are passed to
+    the User object, preferably with an algorithm that is meant for generating
+    secure password hashes. Other fields may have encrypted values passed to
+    them, so long as the encoding of those values can be read by the attached
+    SPARQL endpoint. 'id' must be a unicode string and it must be unique for
+    each user. Since this system does not allow users to authenticate
+    anonymously, a User must have a 'hashpass' value.
     
     Attributes:
         actkey (str): URL of the 'active' predicate for a user's active state.
         authenticated (bool): State of authentication for login sessions.
         hashkey (str): URL of the 'hashpass' predicate for hashed passwords.
         namekey (str): URL of the 'name' predicate for user display name.
-        username (str): Name portion of the Subject id.
+        username (str): Name portion of the Subject 'id'.
     """
 
     actkey  = '{}#active'.format(app.config['NAMESPACE'])
@@ -674,23 +791,28 @@ class User(Subject):
     def __init__(self, username, predlist = {}):
         """Create a Subject and set a username and authentication status.
         
-        Once the underlying Subject is initialized, the username is stored and 'authenticated' is set to 'False' do denote that the user exists but has not yet provided credentials. The login handler is expected to set this attribute to 'True' upon successful authentication by the user.
+        Once the underlying Subject is initialized, the username is stored and
+        'authenticated' is set to 'False' do denote that the user exists but
+        has not yet provided credentials. The login handler is expected to set
+        this attribute to 'True' upon successful authentication by the user.
         
         Agrs:
             predlist (dict): New User information, same format as self.preds.
             username (str): Unique user id, same as name portion of Subject id.
         """
-        #b'$2b$12$/t7tQAxpH1cfwIYk.guuIuhQF5GBtoHqaokpxIhsOJNiIng2i.IA.'
         id = 'skmf:{}'.format(username)
         graph = {'users'}
         super().__init__(id=id, type='pfx', graphlist=graph, predlist=predlist)
-        self.username      = username
+        self.username = username
         self.authenticated = False
 
     def get(username):
         """Return a User, if found, from the triplestore from their username.
         
-        Users must have the 'active' and 'hashpass' predicates associated with them in the triplestore to be valid. If the SPARQL query results do not include these two parameters, then they are ignored. It is up to the caller to determine how to handle an inactive User.
+        Users must have the 'active' and 'hashpass' predicates associated with
+        them in the triplestore to be valid. If the SPARQL query results do not
+        include these two parameters, then they are ignored. It is up to the
+        caller to determine how to handle an inactive User.
         
         Args:
             username (str): Unique user id, same as name portion of Subject id.
@@ -751,7 +873,11 @@ class User(Subject):
     def set_hash(self, hashpass):
         """Replace the existing password hash with a new one.
         
-        THIS method is currently very risky. It works by removing the original password hash, then creating a new one. It is possible that it may be interrupted after the first operation, leaving a user unable to authenticate. Until proper UPDATEs are implemented, this action should be avoided.
+        THIS method is currently very risky. It works by removing the original
+        password hash, then creating a new one. It is possible that it may be
+        interrupted after the first operation, leaving a user unable to
+        authenticate. Until proper UPDATEs are implemented, this action should
+        be avoided.
         
         Args:
             hashpass (bytestring): Auth token for use in future authentication.

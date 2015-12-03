@@ -1,15 +1,10 @@
 """skmf.conf_test by Brendan Sweeney, CSS 593, 2015.
 
 Set of testing configuration values for the Flask component. These values are
-placed in a separate file for maintainability and this default file may be
-overridden by specifying a different file with the FLASKR_SETTINGS environment
-variable. This will prevent user settings from being overwritten by defaults in
-the event of a package upgrade. These values should only be used in a testing
-environment.
+placed in a separate file for maintainability and this testing file may be used
+to override the default by specifying it with the FLASKR_SETTINGS environment
+variable. These values should only be used in a testing environment.
 """
-
-DATABASE = '/tmp/flaskr.db'
-"""string: Full path to the database file to be created by init_db()."""
 
 DEBUG = True
 """bool: Set Flask to run in degug mode (True) or production mode (False)."""
@@ -21,12 +16,13 @@ SECRET_KEY = 'replace this with a cryptographic random secret'
 """string: Fake synchronizer token to mitigate cross-site request forgery."""
 
 USERNAME = 'admin'
-"""string: Username for running unit tests."""
+"""string: Default administrative user name."""
 
 PASSWORD = 'default'
-"""string: Password for running unit tests."""
+"""string: Default administrative password."""
 
 WTF_CSRF_ENABLED = False
+"""bool: Disable CSRF protection to avoid having forms drop inputs."""
 
 SPARQL_HOST = 'localhost'
 """string: FQDN or IP address of the SPARQL endpoint."""

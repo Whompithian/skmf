@@ -7,9 +7,6 @@ variable. This will prevent user settings from being overwritten by defaults in
 the event of a package upgrade.
 """
 
-DATABASE = '/tmp/flaskr.db'
-"""str: Full path to the database file to be created by init_db()."""
-
 DEBUG = True
 """bool: Set Flask to run in degug mode (True) or production mode (False)."""
 
@@ -20,10 +17,10 @@ SECRET_KEY = 'replace this with a cryptographic random secret'
 """str: Seed for synchronizer token to mitigate cross-site request forgery."""
 
 USERNAME = 'admin'
-"""str: Username for running unit tests."""
+"""str: Default administrative user name."""
 
 PASSWORD = 'default'
-"""str: Password for running unit tests."""
+"""str: Default administrative password."""
 
 SPARQL_HOST = 'localhost'
 """str: FQDN or IP address of the SPARQL endpoint."""
@@ -32,12 +29,12 @@ SPARQL_PORT = '9000'
 """str: Port on which the SPARQL endpoint is listening."""
 
 SPARQL_QUERY = '/sparql/'
-"""str: URL extension for SPARQL queries on the endpoint."""
+"""str: URL path for SPARQL queries on the endpoint."""
 
 SPARQL_UPDATE = '/update/'
-"""str: URL extension for SPARQL updates on the endpoint."""
+"""str: URL path for SPARQL updates on the endpoint."""
 
-SPARQL_ENDPOINT = 'http://' + SPARQL_HOST + ':' + SPARQL_PORT
+SPARQL_ENDPOINT = 'http://{}:{}'.format(SPARQL_HOST, SPARQL_PORT)
 """str: Full URL of the SPARQL endpoint."""
 
 NAMESPACE = 'http://localhost/skmf'
