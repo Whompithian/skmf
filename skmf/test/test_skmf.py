@@ -381,8 +381,8 @@ class FlaskTestCase(BaseTestCase):
 
     @unittest.skip('Only running backend tests')
     def test_views_get_responses(self):
-        self.assert200(self.client.get(url_for('show_tags')))
-        self.assertTemplateUsed('show_tags.html')
+        self.assert200(self.client.get(url_for('resources')))
+        self.assertTemplateUsed('resources.html')
         self.assertContext('title', uiLabel.viewTagTitle)
         self.assert200(self.client.get(url_for('login')))
         self.assertTemplateUsed('login.html')

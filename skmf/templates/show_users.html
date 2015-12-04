@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block body %}
-  <!-- Begin body block in template show_users.html -->
+  <!-- Begin body block in template users.html -->
   {% if current_user.is_authenticated %}
     <form action="{{ url_for('add_user') }}" method=post class=add-entry>
       {{ form.hidden_tag() }}
@@ -14,12 +14,5 @@
       </dl>
     </form>
   {% endif %}
-  <ul class=entries>
-  {#% for entry in entries['results']['bindings'] %}
-    <li><h2>{{ entry['label']['value'] }}</h2>{{ entry['description']['value'] }}
-  {% else %}
-    <li><em>Unbelievable. No tags here so far.</em>
-  {% endfor %#}
-  </ul>
-  <!-- End body block in template show_users.html -->
+  <!-- End body block in template users.html -->
 {% endblock %}

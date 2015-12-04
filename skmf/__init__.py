@@ -62,7 +62,7 @@ def connect_sparql():
                         updateEndpoint = app.config['SPARQL_ENDPOINT']
                                        + app.config['SPARQL_UPDATE'])
     except KeyError as e:
-        raise KeyError(str(e) + ' not defined in Flask config')
+        raise KeyError(__name__, str(e))
 
 
 @app.before_request

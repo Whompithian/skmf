@@ -1,15 +1,19 @@
 <!doctype html>
 <!-- Begin template layout.html -->
 {% macro with_errors(field) %}
-    <div class="form_field">
+  <div class="form_field">
     {% if field.errors %}
-        {% set css_class = 'has_error ' + kwargs.pop('class', '') %}
-        {{ field(class=css_class, **kwargs) }}
-        <ul class="errors">{% for error in field.errors %}<li>{{ error|e }}</li>{% endfor %}</ul>
+      {% set css_class = 'has_error ' + kwargs.pop('class', '') %}
+      {{ field(class=css_class, **kwargs) }}
+      <ul class="errors">
+        {% for error in field.errors %}
+          <li>{{ error|e }}</li>
+        {% endfor %}
+      </ul>
     {% else %}
-        {{ field(**kwargs) }}
+      {{ field(**kwargs) }}
     {% endif %}
-    </div>
+  </div>
 {% endmacro %}
 <title>SKMF</title>
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
@@ -18,8 +22,7 @@
   <h1>{{ title }}</h1>
   <div class=metanav>
     <a href="/">Home</a>
-    {# <a href="{{ url_for('show_entries') }}">Entries</a> #}
-    <a href="{{ url_for('show_tags') }}">Resources</a>
+    <a href="{{ url_for('resources') }}">Resources</a>
     {% if current_user.get_id() == 'admin' %}
       <a href="{{ url_for('add_user') }}">Users</a>
     {% endif %}

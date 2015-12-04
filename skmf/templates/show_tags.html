@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
-  <!-- Begin body block in template show_tags.html -->
-  <form action="{{ url_for('show_tags') }}" method="post" class="add-entry">
+  <!-- Begin body block in template resources.html -->
+  <form action="{{ url_for('resources') }}" method="post" class="add-entry">
     {{ query_form.hidden_tag() }}
     <dl>
       <dt>Find existing connections</br></br>
@@ -61,11 +61,9 @@
         </tr>
       {% endfor %}
     </table>
-  {% else %}
-    <li><em>Unbelievable. No resources found so far.</em>
   {% endif %}
   {% if current_user.is_authenticated %}
-      <form action="{{ url_for('show_tags') }}" method="post" class="add-entry">
+      <form action="{{ url_for('resources') }}" method="post" class="add-entry">
         {{ update_form.hidden_tag() }}
         <dl>
           <dt>Insert a new connection</br></br>
@@ -110,12 +108,5 @@
       </dl>
     </form>
   {% endif %}
-  {#<ul class=entries>
-  {% for entry in entries['results']['bindings'] %}
-    <li><h2>{{ entry['label']['value'] }}</h2>{{ entry['description']['value'] }}
-  {% else %}
-    <li><em>Unbelievable. No tags here so far.</em>
-  {% endfor %}
-  </ul>#}
-  <!-- End body block in template show_tags.html -->
+  <!-- End body block in template resource.html -->
 {% endblock %}

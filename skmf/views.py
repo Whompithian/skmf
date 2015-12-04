@@ -19,7 +19,7 @@ Functions:
     login: Authenticate and create a session for a valid user.
     logout: Clear the session for a logged in user.
     page_not_found: Handle user attempts to access an invalid path.
-    show_tags: View and manage resources in the datastore.
+    resources: View and manage resources in the datastore.
     show_subject: Display all triples for a single RDF subject.
     show_users: List existing users and allow new users to be created.
     welcome: Display a basic landing page.
@@ -53,7 +53,7 @@ def welcome():
 
 
 @app.route('/resources', methods=['GET', 'POST'])
-def show_tags():
+def resources():
     """View and manage resources in the datastore.
     
     This function is only meant to provide a basic demonstration of the under-
@@ -221,7 +221,7 @@ def show_tags():
         pred_list = {}
         pred_list[property] = pred_value
         resource.add_data(graphlist={''}, predlist=pred_list)
-    return render_template('show_tags.html', title=uiLabel.viewTagTitle,
+    return render_template('resources.html', title=uiLabel.viewTagTitle,
                            entries=entries, query_form=query_form,
                            insert_form=insert_form, update_form=update_form)
 
@@ -248,7 +248,7 @@ def add_tag():
         desc = insert_form.description.data
         lang = uiLabel.ISOCode.lower()
         insert_query.add_resource(cat, label, desc, lang)
-    return redirect(url_for('show_tags'))
+    return redirect(url_for('resources'))
 
 
 @app.route('/insert', methods=['POST'])
@@ -257,7 +257,7 @@ def add_conn():
     """Add a connection to an existing resource in the datastore.
     
     This view is not used, as its functionality was placed directly in the
-    'show_tags' view because that view already had the query needed to fill the
+    'resources' view because that view already had the query needed to fill the
     options for the dropdown lists. In the future, that functionality should be
     returned to this function to clean up the code.
     
@@ -286,7 +286,7 @@ def add_conn():
         pred_list = {}
         pred_list[property] = pred_value
         resource.add_data(graphlist={''}, predlist=pred_list)
-    return redirect(url_for('show_tags'))
+    return redirect(url_for('resources'))
 
 
 @app.route('/retrieve')
@@ -335,7 +335,7 @@ def login():
             login_user(user)
             flash('{0!s} {1!s}'.format(uiLabel.viewLoginWelcome,
                                        user.get_name()))
-            return redirect(request.args.get('next') or url_for('show_tags'))
+            return redirect(request.args.get('next') or url_for('resources'))
     return render_template('login.html', title=uiLabel.viewLoginTitle,
                            form=form, error=error)
 
@@ -354,7 +354,7 @@ def logout():
     user.authenticated = False
     logout_user()
     flash(uiLabel.viewLogoutLoggedout)
-    return redirect(url_for('show_tags'))
+    return redirect(url_for('resources'))
 
 
 @app.route('/users', methods=['GET', 'POST'])
@@ -370,7 +370,7 @@ def add_user():
         'Add User' page if current user is 'admin', resource page otherwise.
     """
     if current_user.get_id() != 'admin':
-        return redirect(url_for('show_tags'))
+        return redirect(url_for('resources'))
     form = forms.CreateUserForm()
     if form.validate_on_submit():
         user = User(form.username.data)
