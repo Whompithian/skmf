@@ -15,13 +15,13 @@ with the SPARQL endpoint.
 Functions:
     add_conn: Insert one RDF triple through the SPARQL endpoint.
     add_tag: Create a new tag to store with the SPARQL endpoint.
+    add_user: Create a new user to store with the SPARQL endpoint.
     load_user: Retrieve a user from the triplestore for login authentication.
     login: Authenticate and create a session for a valid user.
     logout: Clear the session for a logged in user.
     page_not_found: Handle user attempts to access an invalid path.
     resources: View and manage resources in the datastore.
     show_subject: Display all triples for a single RDF subject.
-    show_users: List existing users and allow new users to be created.
     welcome: Display a basic landing page.
 """
 
@@ -376,7 +376,7 @@ def add_user():
         user = User(form.username.data)
         user.set_hash(bcrypt.generate_password_hash(form.password.data))
         user.set_active()
-    return render_template('show_users.html', title=uiLabel.viewUserTitle,
+    return render_template('users.html', title=uiLabel.viewUserTitle,
                            form=form)
 
 

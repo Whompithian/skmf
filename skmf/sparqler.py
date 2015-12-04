@@ -337,7 +337,7 @@ class SPARQLER(SPARQLWrapper):
                 return False
         return True
 
-    def insert(self, graphlist = set(), subjectlist = {}):
+    def insert(self, graphlist, subjectlist = {}):
         """Perform an INSERT of some RDF triples into a triplestore.
         
         A SPARQL INSERT may have unexpected results, as it is possible to place
@@ -356,7 +356,7 @@ class SPARQLER(SPARQLWrapper):
         return self._update(action='INSERT', graphlist=graphlist,
                             subjectlist=subjectlist)
 
-    def delete(self, graphlist = set(), subjectlist = {}):
+    def delete(self, graphlist, subjectlist = {}):
         """Perform a DELETE of some RDF triples from a triplestore.
         
         Any triple in the subject list that exists in the triplestore will be

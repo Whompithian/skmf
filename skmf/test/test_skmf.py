@@ -16,14 +16,119 @@ Classes:
 
 import unittest
 
-from flask import Flask, url_for
+from flask import url_for
 from flask.ext.bcrypt import Bcrypt
 from flask.ext.login import current_user
 from flask.ext.testing import TestCase
 
-from skmf import connect_sparql, g
+from skmf import app, connect_sparql, g
 from skmf.resource import Query, Subject, User
 import skmf.i18n.en_US as uiLabel
+
+
+constraint = {'http://localhost/skmf#id':
+               {'type': 'uri',
+                'value':
+                 {'http://www.w3.org/2000/01/rdf-schema#comment':
+                   {'type': 'uri',
+                    'value':
+                     [{'type': 'literal',
+                       'value': 'A unique string to identify a registered user.',
+                       'xml:lang': 'EN-US'
+                     },
+                     {'type': 'literal',
+                       'value': 'A unique string to identify a registered user.',
+                       'xml:lang': 'EN-US'
+                     }, 
+                     {'type': 'literal',
+                       'value': 'A unique string to identify a registered user.',
+                       'xml:lang': 'EN-US'
+                     }]
+                   },
+                  'http://www.w3.org/2000/01/rdf-schema#label':
+                   {'type': 'uri',
+                    'value': 
+                     [{'type': 'literal',
+                       'value': 'UserID',
+                       'xml:lang': 'EN-US'
+                     }]
+                   },
+                  'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
+                   {'type': 'uri',
+                    'value':
+                     [{'type': 'uri',
+                       'value': 'http://www.w3.org/2000/01/rdf-schema#Class'
+                     }]
+                   },
+                  'http://www.w3.org/2000/01/rdf-schema#isDefinedBy':
+                   {'type': 'uri',
+                    'value':
+                     [{'type': 'uri',
+                       'value': 'http://localhost/skmf#'
+                     }]
+                   }
+                 }
+               },
+              'http://example.com/blah#bleh':
+               {'type': 'uri',
+                'value':
+                 {'http://www.w3.org/2000/01/rdf-schema#comment':
+                   {'type': 'uri',
+                    'value':
+                     [{'type': 'literal',
+                       'value': 'A unique string to identify a registered user.',
+                       'xml:lang': 'EN-US'
+                     }]
+                   },
+                  'http://www.w3.org/2000/01/rdf-schema#label':
+                   {'type': 'uri',
+                    'value': 
+                     [{'type': 'literal',
+                       'value': 'UserID',
+                       'xml:lang': 'EN-US'
+                     }]
+                   },
+                  'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
+                   {'type': 'uri',
+                    'value':
+                     [{'type': 'uri',
+                       'value': 'http://www.w3.org/2000/01/rdf-schema#Class'
+                     }]
+                   },
+                  'http://www.w3.org/2000/01/rdf-schema#isDefinedBy':
+                   {'type': 'uri',
+                    'value':
+                     [{'type': 'uri',
+                       'value': 'http://localhost/skmf#'
+                     }]
+                   }
+                 }
+               },
+              'http://localhost/skmf#admin':
+               {'type': 'uri',
+                'value':
+                 {'http://localhost/skmf#id':
+                   {'type': 'uri',
+                    'value':
+                     [{'type': 'literal',
+                       'value': 'admin'
+                     }]
+                   }
+                 }
+               },
+              'http://localhost/skmf#User':
+               {'type': 'uri',
+                'value':
+                 {'http://www.w3.org/2000/01/rdf-schema#member':
+                   {'type': 'uri',
+                    'value':
+                     [{'type': 'uri',
+                       'value': 'http://localhost/skmf#id'
+                     }]
+                   }
+                 }
+               }
+             }
 
 
 class BaseTestCase(TestCase):
@@ -37,21 +142,35 @@ class BaseTestCase(TestCase):
     """
 
     def create_app(self):
-        app = Flask(__name__)
+        """Initialize the Flask application with a testing configuration."""
         app.config.from_envvar('FLASK_SETTINGS', silent=False)
         self.bcrypt = Bcrypt(app)
         return app
 
     def setUp(self):
+        """Establish a connection to the SPARQL endpoint."""
         g.sparql = connect_sparql()
 
     def login(self, username, password, follow_redirects = False):
+        """Perform a login operation for the provided user.
+        
+        This is basically a placeholder for the user login form Web page.
+        
+        Args:
+            follow_redirects (bool): Whether to follow view redirects.
+            password (str): Plain text password of the user to login.
+            username (str): Unique ID of the user to login.
+        
+        Returns:
+            The view provided by the login submission.
+        """
         return self.client.post(url_for('login'), data=dict(
             username=username,
             password=password
         ), follow_redirects=follow_redirects)
 
     def logout(self):
+        """Perform a logout of the current user, if logged in."""
         return self.client.get(url_for('logout'), follow_redirects=True)
 
 
@@ -62,115 +181,13 @@ class SPARQLERTestCase(BaseTestCase):
     """
     
     id = 'http://localhost/skmf#admin'
+    rdfs_class = 'http://www.w3.org/2000/01/rdf-schema#Class'
     subject = 'http://localhost/skmf#User'
 
     def test_sparql_query_subject(self):
         """Verify that subject query results are correct and complete."""
-        constraint = {'http://localhost/skmf#id':
-                       {'type': 'uri',
-                        'value':
-                         {'http://www.w3.org/2000/01/rdf-schema#comment':
-                           {'type': 'uri',
-                            'value':
-                             [{'type': 'literal',
-                               'value': 'A unique string to identify a registered user.',
-                               'xml:lang': 'EN-US'
-                             },
-                             {'type': 'literal',
-                               'value': 'A unique string to identify a registered user.',
-                               'xml:lang': 'EN-US'
-                             }, 
-                             {'type': 'literal',
-                               'value': 'A unique string to identify a registered user.',
-                               'xml:lang': 'EN-US'
-                             }]
-                           },
-                          'http://www.w3.org/2000/01/rdf-schema#label':
-                           {'type': 'uri',
-                            'value': 
-                             [{'type': 'literal',
-                               'value': 'UserID',
-                               'xml:lang': 'EN-US'
-                             }]
-                           },
-                          'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
-                           {'type': 'uri',
-                            'value':
-                             [{'type': 'uri',
-                               'value': 'http://www.w3.org/2000/01/rdf-schema#Class'
-                             }]
-                           },
-                          'http://www.w3.org/2000/01/rdf-schema#isDefinedBy':
-                           {'type': 'uri',
-                            'value':
-                             [{'type': 'uri',
-                               'value': 'http://localhost/skmf#'
-                             }]
-                           }
-                         }
-                       },
-                      'http://example.com/blah#bleh':
-                       {'type': 'uri',
-                        'value':
-                         {'http://www.w3.org/2000/01/rdf-schema#comment':
-                           {'type': 'uri',
-                            'value':
-                             [{'type': 'literal',
-                               'value': 'A unique string to identify a registered user.',
-                               'xml:lang': 'EN-US'
-                             }]
-                           },
-                          'http://www.w3.org/2000/01/rdf-schema#label':
-                           {'type': 'uri',
-                            'value': 
-                             [{'type': 'literal',
-                               'value': 'UserID',
-                               'xml:lang': 'EN-US'
-                             }]
-                           },
-                          'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
-                           {'type': 'uri',
-                            'value':
-                             [{'type': 'uri',
-                               'value': 'http://www.w3.org/2000/01/rdf-schema#Class'
-                             }]
-                           },
-                          'http://www.w3.org/2000/01/rdf-schema#isDefinedBy':
-                           {'type': 'uri',
-                            'value':
-                             [{'type': 'uri',
-                               'value': 'http://localhost/skmf#'
-                             }]
-                           }
-                         }
-                       },
-                      'http://localhost/skmf#admin':
-                       {'type': 'uri',
-                        'value':
-                         {'http://localhost/skmf#id':
-                           {'type': 'uri',
-                            'value':
-                             [{'type': 'literal',
-                               'value': 'admin'
-                             }]
-                           }
-                         }
-                       },
-                      'http://localhost/skmf#User':
-                       {'type': 'uri',
-                        'value':
-                         {'http://www.w3.org/2000/01/rdf-schema#member':
-                           {'type': 'uri',
-                            'value':
-                             [{'type': 'uri',
-                               'value': 'http://localhost/skmf#id'
-                             }]
-                           }
-                         }
-                       }
-                     }
-        g.sparql.query_general({'', 'blah', 'bleh', 'bluh'}, {'bob', 'bub', 'bib'}, constraint)
-        assert False
+        g.sparql.query_general({'', 'blah', 'bleh', 'bluh'},
+                               {'bob', 'bub', 'bib'}, constraint)
         result = g.sparql.query_subject(self.id)
         # admin user not defined in the default graph
         self.assertFalse(result['results']['bindings'])
@@ -200,15 +217,102 @@ class SPARQLERTestCase(BaseTestCase):
         # removal of 'users' graph does hide admin user
         self.assertFalse(result['results']['bindings'])
 
+    def test_sparql_query_general(self):
+        """Verify that general query results are correct and complete."""
+        labels = {'s', 'p', 'o'}
+        subjects = {'s':
+                       {'type': 'label',
+                        'value':
+                            {'p':
+                                {'type': 'label',
+                                 'value':
+                                     [{'type': 'label',
+                                     'value': 'o'}]}}}}
+        user_subject = {'skmf:User':
+                           {'type': 'pfx',
+                            'value':
+                                {'a':
+                                    {'type': 'pfx',
+                                     'value':
+                                         [{'type': 'label',
+                                           'value': 'o'}]}}}}
+        opt_pred = {'rdfs:label': 
+                       {'type': 'pfx',
+                        'value':
+                            [{'type': 'label',
+                              'value': 'label'}]}}
+        opt_subject = {'o':
+                        {'type': 'label',
+                         'value': opt_pred}}
+        result = g.sparql.query_general()
+        # empty query is valid
+        self.assertFalse(result['results']['bindings'])
+        result = g.sparql.query_general(labellist=labels, subjectlist=subjects)
+        # labeled items should be in results
+        self.assertIn('s', result['head']['vars'])
+        self.assertIn('p', result['head']['vars'])
+        self.assertIn('o', result['head']['vars'])
+        result_no_labels = g.sparql.query_general(subjectlist=subjects)
+        # empty label list should return all labels from subject list
+        self.assertIn('s', result_no_labels['head']['vars'])
+        self.assertIn('p', result_no_labels['head']['vars'])
+        self.assertIn('o', result_no_labels['head']['vars'])
+        result_user = g.sparql.query_general(subjectlist=user_subject)
+        # skmf:User should have a type property of rdfs:Class
+        self.assertNotIn('s', result_user['head']['vars'])
+        self.assertNotIn('p', result_user['head']['vars'])
+        self.assertIn('o', result_user['head']['vars'])
+        self.assertIn(self.rdfs_class,
+                      result_user['results']['bindings'][0]['o']['value'])
+        user_subject['o'] = {'type': 'label', 'value': opt_pred}
+        result_mixed = g.sparql.query_general(subjectlist=user_subject)
+        # no label for rdfs:Class in skmf, so no results from query
+        self.assertFalse(result_mixed['results']['bindings'])
+        del user_subject['o']
+        result_mixed = g.sparql.query_general(subjectlist=user_subject,
+                                              optlist=[opt_subject])
+        # making the label portion optional allows results to be returned
+        self.assertTrue(result_mixed['results']['bindings'])
+
+    def test_sparql_insert_delete(self):
+        """Verify that INSERT and DELETE are correct and complementary."""
+        new_subject = {'skmf:blah':
+                       {'type': 'pfx',
+                        'value': 
+                            {'skmf:bleh':
+                                {'type': 'pfx',
+                                 'value':
+                                     [{'type': 'pfx',
+                                       'value': 'skmf:bluh'}]}}}}
+        test_subject = {'skmf:blah':
+                        {'type': 'pfx',
+                         'value': 
+                             {'p':
+                                 {'type': 'label',
+                                  'value':
+                                      [{'type': 'label',
+                                        'value': 'o'}]}}}}
+        result_empty = g.sparql.query_general(subjectlist=test_subject)
+        # skmf:blah does not yet exist in the triplestore
+        self.assertFalse(result_empty['results']['bindings'])
+        g.sparql.insert(graphlist={''}, subjectlist=new_subject)
+        result = g.sparql.query_general(subjectlist=test_subject)
+        # skmf:blah has been added to the triplestore
+        self.assertTrue(result['results']['bindings'])
+        g.sparql.delete(graphlist={''}, subjectlist=new_subject)
+        result_empty_again = g.sparql.query_general(subjectlist=test_subject)
+        # skmf:blah does not yet exist in the triplestore
+        self.assertFalse(result_empty_again['results']['bindings'])
+
 
 class ResourceQueryTestCase(BaseTestCase):
-    """Unit tests to verify the correct behavior of Query objects and methods.
+    """Unit tests to verify correct behavior of Query instances and methods.
     
     Validate the behavior of middleware for SPARQL endpoint operations.
     """
 
     def test_resource_query(self):
-        """Verify that RDF subjects are properly defined and behaved."""
+        """Verify that queries are properly defined and behaved."""
         query = Query()
         self.assertIn('', query.graphs)
         self.assertFalse(query.labels)
@@ -219,85 +323,31 @@ class ResourceQueryTestCase(BaseTestCase):
         query.remove_graphs({'bob'})
         self.assertNotIn('bob', query.graphs)
         query.add_graphs({'users'})
-        constraint = {'s': {'type': 'label', 'value': {'p': {'type': 'label', 'value': [{'type': 'label', 'value': 'o'}]}}}}
-        query.add_constraints(labellist={'s', 'p', 'o'}, subjectlist=constraint)
-        print(query.subjects)
-        query.remove_constraints(labellist={'s', 'p', 'o'}, subjectlist=constraint)
+        local_constraint = {'s':
+                               {'type': 'label',
+                                'value':
+                                    {'p':
+                                        {'type': 'label',
+                                         'value':
+                                             [{'type': 'label',
+                                               'value': 'o'}]}}}}
+        query.add_constraints(labellist={'s', 'p', 'o'},
+                              subjectlist=local_constraint)
+        query.remove_constraints(labellist={'s', 'p', 'o'},
+                                 subjectlist=local_constraint)
         self.assertFalse(query.labels)
         self.assertFalse(query.subjects)
-#        query.remove_graphs({'users'})
-#        constraint = {'skmf:aclgraph': {'type': 'pfx', 'value': {'a': {'type': 'pfx', 'value': [{'type': 'pfx', 'value': 'rdfs:Class'}]}, 'rdfs:label': {'type': 'pfx', 'value': [{'type': 'literal', 'value': 'ACLGraph', 'xml:lang': 'EN-US'}]}, 'rdfs:comment': {'type': 'pfx', 'value': [{'type': 'literal', 'value': 'A named graph to which another resource is permitted access.', 'xml:lang': 'EN-US'}]}, 'rdfs:isDefinedBy': {'type': 'pfx', 'value': [{'type': 'uri', 'value': 'http://localhost/skmf#'}]}}}}
-#        query.add_constraints(subjectlist=constraint)
-#        query.submit_delete()
-#        query.remove_constraints(subjectlist=constraint)
-#        constraint = {'http://localhost/skmf#id':
-#                       {'type': 'uri',
-#                        'value':
-#                         {'http://www.w3.org/2000/01/rdf-schema#comment':
-#                           {'type': 'uri',
-#                            'value':
-#                             [{'type': 'literal',
-#                               'value': 'A unique string to identify a registered user.',
-#                               'xml:lang': 'EN-US'
-#                             }]
-#                           },
-#                          'http://www.w3.org/2000/01/rdf-schema#label':
-#                           {'type': 'uri',
-#                            'value': 
-#                             [{'type': 'literal',
-#                               'value': 'UserID',
-#                               'xml:lang': 'EN-US'
-#                             }]
-#                           },
-#                          'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
-#                           {'type': 'uri',
-#                            'value':
-#                             [{'type': 'uri',
-#                               'value': 'http://www.w3.org/2000/01/rdf-schema#Class'
-#                             }]
-#                           },
-#                          'http://www.w3.org/2000/01/rdf-schema#isDefinedBy':
-#                           {'type': 'uri',
-#                            'value':
-#                             [{'type': 'uri',
-#                               'value': 'http://localhost/skmf#'
-#                             }]
-#                           }
-#                         }
-#                       },
-#                      'http://localhost/skmf#admin':
-#                       {'type': 'uri',
-#                        'value':
-#                         {'http://localhost/skmf#id':
-#                           {'type': 'uri',
-#                            'value':
-#                             [{'type': 'literal',
-#                               'value': 'admin'
-#                             }]
-#                           }
-#                         }
-#                       },
-#                      'http://localhost/skmf#User':
-#                       {'type': 'uri',
-#                        'value':
-#                         {'http://www.w3.org/2000/01/rdf-schema#member':
-#                           {'type': 'uri',
-#                            'value':
-#                             [{'type': 'uri',
-#                               'value': 'http://localhost/skmf#id'
-#                             }]
-#                           }
-#                         }
-#                       }
-#                     }
-#        query.add_constraints(subjectlist=constraint)
-#        query.submit_delete()
-#        query.remove_constraints(subjectlist=constraint)
-#        self.assertTrue(False)
+        query.remove_graphs({'users'})
+        query.add_constraints(subjectlist=constraint)
+        query.submit_delete()
+        query.remove_constraints(subjectlist=constraint)
+        query.add_constraints(subjectlist=constraint)
+        query.submit_delete()
+        query.remove_constraints(subjectlist=constraint)
 
 
 class ResourceSubjectTestCase(BaseTestCase):
-    """Unit tests to verify the correct behavior of RDF Subjects and methods.
+    """Unit tests to verify correct behavior of RDF Subjects and methods.
     
     Validate the behavior of middleware for SPARQL endpoint operations.
     """
@@ -308,7 +358,6 @@ class ResourceSubjectTestCase(BaseTestCase):
     rdfobject = {'value': 'Gone', 'type': 'literal', 'xml:lang': 'en-us'}
     predlist = {labelkey: {'type': 'uri', 'value': [rdfobject]}}
 
-    @unittest.skip('Kinda scary')
     def test_resource_subject(self):
         """Verify that RDF subjects are properly defined and behaved."""
         subject = Subject(self.id)
@@ -348,9 +397,9 @@ class ResourceSubjectTestCase(BaseTestCase):
 
 
 class ResourceUserTestCase(BaseTestCase):
-    """Unit tests to verify the correct behavior of SKMF Users and methods.
+    """Unit tests to verify correct behavior of SKMF Users and methods.
     
-    Validate the behavior of session management and SPARQL endpoint operations.
+    Validate the behavior of User loading through SPARQL endpoint operations.
     """
     
     username = 'admin'
@@ -359,7 +408,7 @@ class ResourceUserTestCase(BaseTestCase):
     graphlist = {'users'}
 
     def test_resource_user(self):
-        """Verify that Users are properly defined and behaved."""
+        """Verify that Users are properly loaded and defined."""
         user = User(self.username)
         self.assertIn(User.actkey, user.preds)
         self.assertIn(User.hashkey, user.preds)
@@ -373,14 +422,14 @@ class ResourceUserTestCase(BaseTestCase):
 
 
 class FlaskTestCase(BaseTestCase):
-    """Unit tests to verify the correct behavior of Flask views and databases.
+    """Unit tests to verify the correct behavior of Flask views and templates.
     
     Validate the behavior of template rendering, redirects, session management,
     form handling, error handling, and SPARQL endpoint operations.
     """
 
-    @unittest.skip('Only running backend tests')
     def test_views_get_responses(self):
+        """Verify that proper responses are returned from named views."""
         self.assert200(self.client.get(url_for('resources')))
         self.assertTemplateUsed('resources.html')
         self.assertContext('title', uiLabel.viewTagTitle)
@@ -388,17 +437,18 @@ class FlaskTestCase(BaseTestCase):
         self.assertTemplateUsed('login.html')
         self.assertContext('title', uiLabel.viewLoginTitle)
         self.assert405(self.client.get(url_for('add_tag')))
-        response = self.client.get(url_for('show_users'))
+        response = self.client.get(url_for('add_user'))
         self.assertRedirects(response, url_for('login') + '?next=%2Fusers')
 
-    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
     def test_login_logout(self):
+        """Verify that user sessions are initiated and torn down properly."""
         with self.client:
             self.assertTrue(current_user.is_anonymous)
             self.login('admin', 'default')
             self.assertEqual(current_user.get_id(), 'admin')
-            self.assertTrue(self.bcrypt.check_password_hash(
-                                    current_user.hashpass, 'default'))
+            self.assertTrue(
+                self.bcrypt.check_password_hash(
+                    current_user.get_hash(), 'default'))
             self.assertEqual(current_user.get_name(), 'Administrator')
             self.assertTrue(current_user.is_authenticated())
             self.assertTrue(current_user.is_active())
@@ -407,8 +457,8 @@ class FlaskTestCase(BaseTestCase):
             self.assertTrue(current_user.is_anonymous)
             self.assertIn('You were logged out', response.data.decode('utf-8'))
 
-    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
     def test_login_invalid(self):
+        """Verify that invalid credentials do not create a user session."""
         with self.client:
             response = self.login('Admin', 'default', True)
             self.assertTrue(current_user.is_anonymous)
@@ -420,7 +470,6 @@ class FlaskTestCase(BaseTestCase):
             self.assertIn('Invalid username or password',
                           response.data.decode('utf-8'))
 
-    @unittest.skip('Bypass slow BCrypt functions to speed other tests')
     def test_view_restricted(self):
         """Verify view behavior when user is not logged in."""
         with self.client:
@@ -429,7 +478,7 @@ class FlaskTestCase(BaseTestCase):
                 description='A short description.'))
             self.assertRedirects(response, url_for('login') + '?next=%2Fadd')
         with self.client:
-            response = self.client.post(url_for('show_users'), data=dict(
+            response = self.client.post(url_for('add_user'), data=dict(
                 username='bob',
                 password='password',
                 confirm='password'))
@@ -437,21 +486,9 @@ class FlaskTestCase(BaseTestCase):
             self.login('bob', 'default', True)
             self.assertTrue(current_user.is_anonymous)
             self.login('admin', 'default', True)
-            self.assert200(self.client.get(url_for('show_users')))
-            self.assertTemplateUsed('show_users.html')
+            self.assert200(self.client.get(url_for('add_user')))
+            self.assertTemplateUsed('users.html')
             self.assertContext('title', uiLabel.viewUserTitle)
-
-    def test_view_add_tag(self):
-        """Verify that tags may be added when user is logged in"""
-        pass
-
-    def test_view_create_user(self):
-        """Verify that users may be created when admin is logged in"""
-        pass
-
-    #with skmf.app.test_request_context('/?name=Peter'):
-    #    self.assertEqual(flask.request.path, '/')
-    #    self.assertEqual(flask.request.args['name'], 'Peter')
 
 if __name__ == '__main__':
     unittest.main()
