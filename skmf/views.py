@@ -73,53 +73,78 @@ def resources():
     # Failure to set explicit parameters leads to broken garbage collection
     query = Query(labellist = set(), subjectlist = {}, optlist = [])
     rdfs_class = query.get_resources('rdfs:Class')
+    owl_class = query.get_resources('owl:Class')
+    owl_obj_prop = query.get_resources('owl:ObjectProperty')
+    owl_dtype_prop = query.get_resources('owl:DatatypeProperty')
     rdf_property = query.get_resources('rdf:Property')
     skmf_resource = query.get_resources('skmf:Resource')
     query_form = forms.FindEntryForm()
-    query_form.resource.choices = [
-        (r['resource']['value'], r['label']['value']) for r in skmf_resource]
+    res_choices = set()
+    for res in skmf_resource:
+        if res['resource']['type'] != 'bnode':
+            res_choices.add((res['resource']['value'],
+                          res['label']['value'] if 'value' in res['label'] else res['resource']['value'].partition('#')[2]))
+    res_sorted = sorted(list(res_choices), key=lambda x: x[1])
+    conn_choices = set()
+    for conn in rdf_property:
+        if conn['resource']['type'] != 'bnode':
+            conn_choices.add((conn['resource']['value'],
+                        conn['label']['value'] if 'value' in conn['label'] else conn['resource']['value'].partition('#')[2]))
+    for conn in owl_obj_prop:
+        if conn['resource']['type'] != 'bnode':
+            conn_choices.add((conn['resource']['value'],
+                        conn['label']['value'] if 'value' in conn['label'] else conn['resource']['value'].partition('#')[2]))
+    for conn in owl_dtype_prop:
+        if conn['resource']['type'] != 'bnode':
+            conn_choices.add((conn['resource']['value'],
+                        conn['label']['value'] if 'value' in conn['label'] else conn['resource']['value'].partition('#')[2]))
+    conn_choices.add(('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'A'))
+    conn_sorted = sorted(list(conn_choices), key=lambda x: x[1])
+    targ_choices = set()
+    for targ in rdfs_class:
+        if targ['resource']['type'] != 'bnode':
+            targ_choices.add((targ['resource']['value'],
+                        targ['label']['value'] if 'value' in targ['label'] else targ['resource']['value'].partition('#')[2]))
+    for targ in owl_class:
+        if targ['resource']['type'] != 'bnode':
+            targ_choices.add((targ['resource']['value'],
+                        targ['label']['value'] if 'value' in targ['label'] else targ['resource']['value'].partition('#')[2]))
+    targ_sorted = sorted(list(targ_choices), key=lambda x: x[1])
+    query_form.resource.choices = res_sorted[:]
     query_form.resource.choices.insert(0, (' ', ''))
     query_form.resource.choices.insert(0, ('-', '---'))
     query_form.resource.choices.insert(0, ('', 'Resource'))
-    query_form.connection.choices = [
-        (c['resource']['value'], c['label']['value']) for c in rdf_property]
+    query_form.connection.choices = conn_sorted[:]
     query_form.connection.choices.insert(0, (' ', ''))
     query_form.connection.choices.insert(0, ('-', '---'))
     query_form.connection.choices.insert(0, ('', 'Connection'))
-    query_form.target.choices = [
-        (r['resource']['value'], r['label']['value']) for r in rdfs_class]
+    query_form.target.choices = targ_sorted[:]
     query_form.target.choices.insert(0, (' ', ''))
     query_form.target.choices.insert(0, ('-', '---'))
     query_form.target.choices.insert(0, ('', 'Target'))
-    query_form.resource_2.choices = [
-        (r['resource']['value'], r['label']['value']) for r in skmf_resource]
+    query_form.resource_2.choices = res_sorted[:]
     query_form.resource_2.choices.insert(0, (' ', ''))
     query_form.resource_2.choices.insert(0, ('-', '---'))
     query_form.resource_2.choices.insert(0, ('', 'Resource'))
-    query_form.connection_2.choices = [
-        (c['resource']['value'], c['label']['value']) for c in rdf_property]
+    query_form.connection_2.choices = conn_sorted[:]
     query_form.connection_2.choices.insert(0, (' ', ''))
     query_form.connection_2.choices.insert(0, ('-', '---'))
     query_form.connection_2.choices.insert(0, ('', 'Connection'))
-    query_form.target_2.choices = [
-        (r['resource']['value'], r['label']['value']) for r in rdfs_class]
+    query_form.target_2.choices = targ_sorted[:]
     query_form.target_2.choices.insert(0, (' ', ''))
     query_form.target_2.choices.insert(0, ('-', '---'))
     query_form.target_2.choices.insert(0, ('', 'Target'))
     insert_form = forms.AddEntryForm()
     update_form = forms.AddConnectionForm()
-    update_form.resource.choices = [
-        (c['resource']['value'], c['label']['value']) for c in skmf_resource]
+    update_form.resource.choices = res_sorted[:]
     update_form.resource.choices.insert(0, (' ', ''))
     update_form.resource.choices.insert(0, ('-', '---'))
     update_form.resource.choices.insert(0, ('', 'Resource'))
-    update_form.connection.choices = [
-        (r['resource']['value'], r['label']['value']) for r in rdf_property]
+    update_form.connection.choices = conn_sorted[:]
     update_form.connection.choices.insert(0, (' ', ''))
     update_form.connection.choices.insert(0, ('-', '---'))
     update_form.connection.choices.insert(0, ('', 'Connection'))
-    update_form.target.choices = [
-        (r['resource']['value'], r['label']['value']) for r in rdfs_class]
+    update_form.target.choices = targ_sorted[:]
     update_form.target.choices.insert(0, (' ', ''))
     update_form.target.choices.insert(0, ('-', '---'))
     update_form.target.choices.insert(0, ('', 'Target'))

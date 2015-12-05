@@ -416,16 +416,16 @@ class Query(object):
         Returns:
             List of subjects that have the supplied predicate applied to them.
         """
-        label_list = {'resource', 'label', 'comment'}
+        label_list = {'resource', 'label'}
         resource_object = {}
         resource_object['type'] = 'pfx'
         resource_object['value'] = category
         label_object = {}
         label_object['type'] = 'label'
         label_object['value'] = 'label'
-        comment_object = {}
-        comment_object['type'] = 'label'
-        comment_object['value'] = 'comment'
+#        comment_object = {}
+#        comment_object['type'] = 'label'
+#        comment_object['value'] = 'comment'
         pred_value = {}
         pred_value['type'] = 'pfx'
         pred_value['value'] = [resource_object]
@@ -433,18 +433,23 @@ class Query(object):
         label_value = {}
         label_value['type'] = 'pfx'
         label_value['value'] = [label_object]
-        predicates['rdfs:label'] = label_value
-        comment_value = {}
-        comment_value['type'] = 'pfx'
-        comment_value['value'] = [comment_object]
-        predicates['rdfs:comment'] = comment_value
+        opt_preds = {'rdfs:label': label_value}
+#        comment_value = {}
+#        comment_value['type'] = 'pfx'
+#        comment_value['value'] = [comment_object]
+#        predicates['rdfs:comment'] = comment_value
         sub_value = {}
         sub_value['type'] = 'label'
         sub_value['value'] = predicates
         subject = {'resource': sub_value}
+        opt_sub_value = {}
+        opt_sub_value['type'] = 'label'
+        opt_sub_value['value'] = opt_preds
+        opt_subject = {'resource': opt_sub_value}
         result = g.sparql.query_general(graphlist=self.graphs,
                                         labellist=label_list,
-                                        subjectlist=subject)
+                                        subjectlist=subject,
+                                        optlist=[opt_subject])
         if result:
             return result['results']['bindings']
         return None
