@@ -461,7 +461,7 @@ def add_user():
     form = forms.CreateUserForm()
     if form.validate_on_submit():
         user = User(form.username.data)
-        if not user.preds:
+        if len(user.preds) <= 1:
             user.set_hash(bcrypt.generate_password_hash(form.password.data))
             user.set_active()
         else:
