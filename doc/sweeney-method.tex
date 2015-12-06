@@ -1,11 +1,55 @@
 \chapter{Methods, Design, and Architecture}
 
-A few patterns were approached.
+The code base of SKMF is written entirely in Python, with Python 3.4 used as the active interpreter throughout development. This allows the code to be portable and forward-facing enough that it should be easily maintainable. The underlying architectural pattern used is model-view-controller (MVC). This pattern lends itself well to Web applications that utilize a backend datastore. Development followed the security development lifecycle (SDL) for Agile, as prescribed by Microsoft \cite{secdevlifecycle}. The Agile approach that was attempted is test-driven development (TDD), although project development veered heavily from this desired approach. For the most part, development stayed along the guidelines set out in the original project plan. Implementation details and justification for several design decisions are provided in the following sections.
 
- 
-\section{MVC}
 
-A minimal SPARQL model, some Flask views, and a complex ORM controller.
+\section{Developing With Modern Python}
+
+Python was chosen as the development language for SKMF because the sole developer has some familiarity with Python development, the Python project has excellent documentation, and the Python interpreter makes Python applications highly portable. Python 3.4 was chosen as the target version because the widely deployed version 2.7 is no longer supported by upstream development and version 3.5, although currently considered stable, had not reached wide adoption at the time the SKMF project was started. As of this writing, version 3.4 is the stable version of Python on both Gentoo Linux, the primary environment of the developer, and Debian Linux, which has wide adoption amongst Linux users. Adhering to Python 3.4 compatibility ensures that the project can be easily maintained.
+
+There are also some data structures that are particularly easy to work with in Python. Sets are useful when a collection should not contain any duplicates. They are especially useful when comparisons must be made between the contents of multiple collections, such as the intersection or the difference. Dictionaries, referred to in some other object-oriented programming languages as maps, are also quite versatile. The key needs to be a hashable datatype, but the value can be any Python object. This is convenient, for example, to hold a structure of RDF triples where the subject URI is the key and the rest of any triples pertaining to that subject are stored in another data structure as the value. Such a pattern is used extensively within SKMF, modeled after the Turtle serialization format for RDF and the JSON structure of SPARQL responses. The following shows this structure in a tree format:
+
+\begin{figure}[p]
+ \begin{fullpage}
+  \singlespace
+  \begin{verbatim}
+{<subject_uri>|<subject_label>:
+    {'type': 'uri'|'pfx'|'label',
+     'value':
+        {<predicate_uri>|<predicate_label>:
+            {'type': 'uri'|'pfx'|'label',
+             'value':
+                [{'type': 'uri'|'pfx'|'label'|'literal',
+                  'value': <ojbect_uri>|<object_label>|<literal>,
+                  'xml:lang': <lang_string>,
+                  'datatype': <xml_datatype>
+                }]
+            }
+        }
+    }
+}
+  \end{verbatim}
+  \caption[Structure of a triple in SKMF]
+   {\narrower A thesis control file ({\tt thesis.tex}).
+   This file is the input to \LaTeX\ that will produce a
+   thesis.  It contains no text, only commands which
+   direct the formatting of the thesis.
+   }
+  \label{skmf-triple}
+ \end{fullpage}
+\end{figure}
+
+As this sample shows, the outer dictionary is keyed off of a subject, identified by its URI (\textless subject\_uri\textgreater ) or by a label for query results (\textless subject\_label\textgreater). The corresponding value is a dictionary with only two entries: 'type' to indicate the form of the subject, with 'pfx' indicating the prefixed form of a URI; and 'value' to point to the rest of the triples, stored in another dictionary. This dictionary is similar in structure to the outer dictionary, only keyed off of RDF predicates. The inner dictionary for predicate values is similar to the one for subject values, except that the 'value' key corresponds to a list of RDF objects stored as simple dictionaries. The object dictionary must have the 'type' and 'value' keys, but the 'xml:lang' and 'datatype' keys are optional and, to each other, antithetical. The object dictionary most closely matches the SPARQL query result specification, while the outer dictionaries extrapolate form to resemble the more terse Turtle serialization style.
+
+
+\section{Model-View-Controller}
+
+MVC is a popular architectural pattern when working with relational databases. Typically, a schema is developed in the database and some objects are designed around the schema to form the model. The view can be implemented with any interface that suits the necessary task, often some form of dynamic Web page rendering. This leaves the controller to perform all of the program logic and pass data between the model and the view. When a graph-based datastore with a dynamic schema is used instead, the problem requires a different approach. 
+
+
+\subsection{SPARQL as the Model}
+
+Sparqly!
 
 
 \section{TDD}
