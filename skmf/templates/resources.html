@@ -63,7 +63,7 @@
     </table>
   {% endif %}
   {% if current_user.is_authenticated %}
-      <form action="{{ url_for('resources') }}" method="post" class="add-entry">
+      <form action="{{ url_for('add_conn') }}" method="post" class="add-entry">
         {{ update_form.hidden_tag() }}
         <dl>
           <dt>Insert a new connection</br></br>

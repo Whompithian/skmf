@@ -70,15 +70,19 @@ def resources():
         Rendered page containing forms and query results, if any.
     """
     entries = None
+    print('entering entries')
     # Failure to set explicit parameters leads to broken garbage collection
     query = Query(labellist = set(), subjectlist = {}, optlist = [])
+    print('empty query')
     rdfs_class = query.get_resources('rdfs:Class')
     owl_class = query.get_resources('owl:Class')
     owl_obj_prop = query.get_resources('owl:ObjectProperty')
     owl_dtype_prop = query.get_resources('owl:DatatypeProperty')
     rdf_property = query.get_resources('rdf:Property')
     skmf_resource = query.get_resources('skmf:Resource')
+    print('resources gathered')
     query_form = forms.FindEntryForm()
+    print('empty FindEntryForm')
     res_choices = set()
     for res in skmf_resource:
         if res['resource']['type'] != 'bnode':
@@ -110,6 +114,7 @@ def resources():
             targ_choices.add((targ['resource']['value'],
                         targ['label']['value'] if 'value' in targ['label'] else targ['resource']['value'].partition('#')[2]))
     targ_sorted = sorted(list(targ_choices), key=lambda x: x[1])
+    print('resources sorted')
     query_form.resource.choices = res_sorted[:]
     query_form.resource.choices.insert(0, (' ', ''))
     query_form.resource.choices.insert(0, ('-', '---'))
@@ -134,8 +139,11 @@ def resources():
     query_form.target_2.choices.insert(0, (' ', ''))
     query_form.target_2.choices.insert(0, ('-', '---'))
     query_form.target_2.choices.insert(0, ('', 'Target'))
+    print('FindEntryForm populated')
     insert_form = forms.AddEntryForm()
+    print('empty AddEntryForm')
     update_form = forms.AddConnectionForm()
+    print('empty AddConnectionForm')
     update_form.resource.choices = res_sorted[:]
     update_form.resource.choices.insert(0, (' ', ''))
     update_form.resource.choices.insert(0, ('-', '---'))
@@ -148,7 +156,9 @@ def resources():
     update_form.target.choices.insert(0, (' ', ''))
     update_form.target.choices.insert(0, ('-', '---'))
     update_form.target.choices.insert(0, ('', 'Target'))
+    print('AddConnectionForm populated')
     if query_form.validate_on_submit():
+        print('wrong form submitted')
         if query_form.target.data:
             rdf_object = {}
             rdf_object['type'] = 'uri'
@@ -225,27 +235,27 @@ def resources():
                         item['tag'] = tag
                     new_entry[label] = item
             entries.append(new_entry)
-    if update_form.validate_on_submit():
-        resource = Subject(update_form.resource.data)
-        property = update_form.connection.data
-        value = update_form.target.data
-        object_type = 'uri'
-        lang = ''
-        if not value:
-            value = update_form.free_object.data
-            object_type = 'literal'
-            lang = uiLabel.ISOCode.lower()
-        rdf_object = {}
-        rdf_object['value'] = value
-        rdf_object['type'] = object_type
-        if lang:
-            rdf_object['xml:lang'] = lang
-        pred_value = {}
-        pred_value['type'] = 'uri'
-        pred_value['value'] = [rdf_object]
-        pred_list = {}
-        pred_list[property] = pred_value
-        resource.add_data(graphlist={''}, predlist=pred_list)
+#    if update_form.validate_on_submit():
+#        resource = Subject(update_form.resource.data)
+#        property = update_form.connection.data
+#        value = update_form.target.data
+#        object_type = 'uri'
+#        lang = ''
+#        if not value:
+#            value = update_form.free_object.data
+#            object_type = 'literal'
+#            lang = uiLabel.ISOCode.lower()
+#        rdf_object = {}
+#        rdf_object['value'] = value
+#        rdf_object['type'] = object_type
+#        if lang:
+#            rdf_object['xml:lang'] = lang
+#        pred_value = {}
+#        pred_value['type'] = 'uri'
+#        pred_value['value'] = [rdf_object]
+#        pred_list = {}
+#        pred_list[property] = pred_value
+#        resource.add_data(graphlist={''}, predlist=pred_list)
     return render_template('resources.html', title=uiLabel.viewTagTitle,
                            entries=entries, query_form=query_form,
                            insert_form=insert_form, update_form=update_form)
@@ -289,15 +299,67 @@ def add_conn():
     Returns:
         Redirect to the resource management Web page.
     """
+    # Failure to set explicit parameters leads to broken garbage collection
+    query = Query(labellist = set(), subjectlist = {}, optlist = [])
+    rdfs_class = query.get_resources('rdfs:Class')
+    owl_class = query.get_resources('owl:Class')
+    owl_obj_prop = query.get_resources('owl:ObjectProperty')
+    owl_dtype_prop = query.get_resources('owl:DatatypeProperty')
+    rdf_property = query.get_resources('rdf:Property')
+    skmf_resource = query.get_resources('skmf:Resource')
+    res_choices = set()
+    for res in skmf_resource:
+        if res['resource']['type'] != 'bnode':
+            res_choices.add((res['resource']['value'],
+                          res['label']['value'] if 'value' in res['label'] else res['resource']['value'].partition('#')[2]))
+    res_sorted = sorted(list(res_choices), key=lambda x: x[1])
+    conn_choices = set()
+    for conn in rdf_property:
+        if conn['resource']['type'] != 'bnode':
+            conn_choices.add((conn['resource']['value'],
+                        conn['label']['value'] if 'value' in conn['label'] else conn['resource']['value'].partition('#')[2]))
+    for conn in owl_obj_prop:
+        if conn['resource']['type'] != 'bnode':
+            conn_choices.add((conn['resource']['value'],
+                        conn['label']['value'] if 'value' in conn['label'] else conn['resource']['value'].partition('#')[2]))
+    for conn in owl_dtype_prop:
+        if conn['resource']['type'] != 'bnode':
+            conn_choices.add((conn['resource']['value'],
+                        conn['label']['value'] if 'value' in conn['label'] else conn['resource']['value'].partition('#')[2]))
+    conn_choices.add(('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'A'))
+    conn_sorted = sorted(list(conn_choices), key=lambda x: x[1])
+    targ_choices = set()
+    for targ in rdfs_class:
+        if targ['resource']['type'] != 'bnode':
+            targ_choices.add((targ['resource']['value'],
+                        targ['label']['value'] if 'value' in targ['label'] else targ['resource']['value'].partition('#')[2]))
+    for targ in owl_class:
+        if targ['resource']['type'] != 'bnode':
+            targ_choices.add((targ['resource']['value'],
+                        targ['label']['value'] if 'value' in targ['label'] else targ['resource']['value'].partition('#')[2]))
+    targ_sorted = sorted(list(targ_choices), key=lambda x: x[1])
     update_form = forms.AddConnectionForm()
+    update_form.resource.choices = res_sorted[:]
+    update_form.resource.choices.insert(0, (' ', ''))
+    update_form.resource.choices.insert(0, ('-', '---'))
+    update_form.resource.choices.insert(0, ('', 'Resource'))
+    update_form.connection.choices = conn_sorted[:]
+    update_form.connection.choices.insert(0, (' ', ''))
+    update_form.connection.choices.insert(0, ('-', '---'))
+    update_form.connection.choices.insert(0, ('', 'Connection'))
+    update_form.target.choices = targ_sorted[:]
+    update_form.target.choices.insert(0, (' ', ''))
+    update_form.target.choices.insert(0, ('-', '---'))
+    update_form.target.choices.insert(0, ('', 'Target'))
     if update_form.validate_on_submit():
-        resource = Subject(update_form.rdf_subject.data)
-        property = update_form.rdf_pred.data
-        value = update_form.rdf_object.data
+        print('update_form validated')
+        resource = Subject(update_form.resource.data)
+        property = update_form.connection.data
+        value = update_form.target.data
         object_type = 'uri'
         lang = ''
         if not value:
-            value = update_form.free_object.data
+            value = update_form.free_target.data
             object_type = 'literal'
             lang = uiLabel.ISOCode.lower()
         rdf_object = {}
@@ -399,8 +461,11 @@ def add_user():
     form = forms.CreateUserForm()
     if form.validate_on_submit():
         user = User(form.username.data)
-        user.set_hash(bcrypt.generate_password_hash(form.password.data))
-        user.set_active()
+        if not user.preds:
+            user.set_hash(bcrypt.generate_password_hash(form.password.data))
+            user.set_active()
+        else:
+            flash('User already exists')
     return render_template('users.html', title=uiLabel.viewUserTitle,
                            form=form)
 

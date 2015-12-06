@@ -706,7 +706,6 @@ class Subject(object):
                     if rdfobject['value'] and rdfobject['type']:
                         if rdfobject not in self.preds[predicate]['value']:
                             self.preds[predicate]['value'].append(rdfobject)
-                            assert temp['value']
                 if temp['value']:
                     new_preds[predicate] = temp
                 else:
@@ -792,6 +791,7 @@ class User(Subject):
     actkey  = '{}#active'.format(app.config['NAMESPACE'])
     hashkey = '{}#hashpass'.format(app.config['NAMESPACE'])
     namekey = 'http://xmlns.com/foaf/0.1/name'
+    userkey = '{}#User'.format(app.config['NAMESPACE'])
 
     def __init__(self, username, predlist = {}):
         """Create a Subject and set a username and authentication status.
@@ -805,11 +805,15 @@ class User(Subject):
             predlist (dict): New User information, same format as self.preds.
             username (str): Unique user id, same as name portion of Subject id.
         """
-        id = 'skmf:{}'.format(username)
+        id = '{}#{}'.format(app.config['NAMESPACE'], username)
         graph = {'users'}
-        super().__init__(id=id, type='pfx', graphlist=graph, predlist=predlist)
+        super().__init__(id=id, type='uri', graphlist=graph, predlist=predlist)
         self.username = username
         self.authenticated = False
+        user_object = {'type': 'uri', 'value': self.userkey}
+        user_pred = {'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
+                        {'type': 'uri', 'value': [user_object]}}
+        self.add_data(graphlist=graph, predlist=user_pred)
 
     def get(username):
         """Return a User, if found, from the triplestore from their username.
