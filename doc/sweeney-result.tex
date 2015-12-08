@@ -1,14 +1,29 @@
 \chapter{Results}
- 
- 
-The project is not complete, but here is what I have.
+
+Semantic Knowledge Management Framework was developed with a focus on six quality goals. These goals are reliability, scalability, testability, maintainability, usability, ans security. Progress was made, to some degree, in meeting each of the quality goals. Some of the goals, however, could not be thoroughly evaluated due to missing functionality or unavailable resources. None of them can be considered fully met in the current state of SKMF. What follows is a discussion of the different quality goals, the motivation behind them, the level of success in meeting them, and what is still required to properly fulfill them. The first three goals and their outcomes are discussed in the first section of this chapter. Each of the three remaining goals is discussed in a separate section.
 
 
-\section{Backend}
+\section{Unverified Quality Goals}
 
-This part is pretty good.
+Any system that is part of vital business operations should be reliable and SKMF could find itself in that position. Reliability also supports availability, which is a tenet of good security. To support this goal, exceptions in SKMF are caught and reported without re-raising only at areas where program operation is not compromised by failure of the current operation. Also, consistency checks are made whenever an operation would alter data in the triplestore. There is, however, much still to do to ensure reliability. For one, extensive negative testing is required to ensure sane handling of unexpected inputs. Tests must also be performed in a multi-client setting to ensure that competing requests to not cause reliability issues. Only when SKMF can perform under duress for extended periods of time can this goal be considered achieved.
+
+Scalability is another goal that is directed toward business environments. In order to scale to large, multisystem environments, SKMF utilizes a multi-threaded framework for handling Web content. It also separates itself from the Web server process and SPARQL endpoint so that these components may be implemented using something that suits the needs of the organization. Unfortunately, there are some serious shortcomings in the prototype implementation of SKMF. While the Web framework uses multi-threading, SKMF, itself, does not make use of threads for backend operations. A bigger issue with scaling comes from a lack of caching, which results in excessive queries to the SPARQL endpoint. This problem would be particularly detrimental in a multi-user environment with frequent system accesses. A final improvement to support scalability is to offload some tasks, most notably password hashing, onto the client. Again, failure to do this would have greater consequences in a multi-user environment. Once these measures are taken, satisfactory scalability could be considered achieved once SKMF is capable of processing requests on par with the Web server behind which it operates.
+
+Since SKMF initially followed test-driven development, the goal of testability naturally fit the project. As the project moved away from TDD, however, this goal increasingly waned. The result is a split between testable code and poorly tested code. Test cases exist for all of the model components of SKMF. While not exhaustive, they demonstrate how easily test cases for those components can be written. The view and controller components, on the other hand, have only minimal test cases. The code in these components is also of considerably lower quality than that written for the model, so it is likely more difficult to test. Therefore, to achieve testability, the view and controller code should be cleaned up to better match the model code and proper Flask testing should be used on those components.
 
 
-\section{User Interface}
+\section{Maintainability}
+
+Maintainability is a personal goal for SKMF. The project may be shelved for some time, then picked up again at some point in the future. It may also be shared or even open-sourced, giving new developers the opportunity to build upon it. In either case, the code should be accessible and understandable to future developers. The interface needs to be clear enough others to use without touching the code, as well. Also, developers should not have to worry about breaking the code in unexpected ways when making modifications. Several steps were taken to ensure the various facets of this goal.
+
+Simplicity promotes maintainability. Whenever possible, Python built-in data structures provide the underlying functionality. This minimizes custom logic and provides developers with familiar constructs. Complex layouts of the data structures follow similar patterns wherever they appear, providing consistency. Documentation accompanies every module, every class, and the majority of functions, methods, and attributes. SKMF lacks direct support for internationalization, but consideration of this issue resulted in the migration of most textual output into an English localization file.
+
+
+\section{Usability}
+
+This part need a whole lot of work.
+
+
+\section{Security}
 
 This part need a whole lot of work.
