@@ -1,3 +1,14 @@
 \chapter{Conclusion}
+\label{concl}
 
-There is still much to be done.
+Semantic Knowledge Management Framework achieved some interesting results with incorporating a full knowledge management process into the RDF triplestore. It is able to operate entirely without a relational database system. Since users are maintained within the triplestore, user information can be linked with any other information in the system, provided the query author has access to the relevant graphs. Security mechanisms utilize the triplestore, as well for storing authorization tokens and for graph-based access controls. Information storage and retrieval also shows promise. Even with the basic, static forms, adding and linking resources is simple and retrieval can utilize links to get more meaningful results, although some of the assumptions made to aid in this process actually hinder it.
+
+This comprehensive use of the triplestore allows for more complete integration of an organization's knowledge assets than systems that utilize multiple datastores. Queries made in standard SPARQL can be scoped from as little as a single graph to as much as every open SPARQL endpoint on the Internet.
+
+A system like SKMF suffers some limitations by using graph-based information storage. There is no structured schema to enforce a data model. Any bad information that creeps into the system has a chance of altering the model in undesirable ways. Graph-based access controls can also cause issues. If one resource appears in multiple graphs that have different access levels, then users may get incomplete views of that resource without realizing that more information exists in the system. While presentation to the user is a major concern of SKMF, no work was done to support exporting information into common formats. Many key uses of a knowledge management system require interoperation with tools that require specific data formats. Although, this issue should not be inherent to the design of SKMF.
+
+Future work could focus on building a user interface that dynamically molds itself to elicit good information from the user. For instance, as data are entered into forms to create a new resource, the system could identify common patterns that have been inserted before and populate the form with additional fields that match one of those patterns. Visual graphs could aid in constructing queries that yield more meaningful results. There are many directions that could be taken to improve the user experience.
+
+The next steps for improving SKMF involve implementing the quality and security enhancements discussed in chapter
+\ref{result}.
+It also needs to undergo substantial user testing better identify its strengths and weaknesses. After that, the project should be built up around the user's needs until it is ready to be deployed in a live knowledge management system.
