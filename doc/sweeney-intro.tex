@@ -1,9 +1,7 @@
 \chapter{Introduction}
 \label{intro}
 
-Knowledge management -- the practice of capturing, refining, and redistributing knowledge -- is an important activity for any organization. It is of particular importance to organizations that operate with a high degree of knowledge transfer between employees; learning organizations. What sets knowledge management apart from information management is that information
-\colorbox{yellow}{management is primarily concerned with maintaining the integrity}
-and availability of an organization's information stores, while knowledge management is concerned with ensuring that information is actionable and useful to members of the organization
+Knowledge management -- the practice of capturing, refining, and redistributing knowledge -- is an important activity for any organization. It is of particular importance to organizations that operate with a high degree of knowledge transfer between employees; learning organizations. What sets knowledge management apart from information management is that information management is primarily concerned with maintaining the integrity and availability of an organization's information stores, while knowledge management is concerned with ensuring that information is actionable and useful to members of the organization
 \cite{kmtoolkit}.
 In order for that to happen, a mechanism must exist to allow for information to be refined, consolidated, correlated, and accurately retrieved. To that end, knowledge management systems (KMS) are designed to provide organizations with a centralized means to collect, refine, and redistribute knowledge between members. One important component of any modern KMS is a readily accessible digital datastore that allows members of an organization to contribute and refine information, then retrieve it based on some set of criteria, such as filters or keyword matches. The purpose of Semantic Knowledge Management Framework (SKMF) is to provide the means to construct such a datastore using Semantic Web technologies.
 
@@ -13,9 +11,7 @@ In order for that to happen, a mechanism must exist to allow for information to 
 
 The Semantic Web was proposed by Tim Burners-Lee in 1998
 \cite{bernerslee}
-as a means of opening up the Internet in a machine readable manner that allows simple Web services to locate and correlate information on behalf of users. The Semantic Web provides some technologies with novel characteristics for knowledge management. The two Semantic Web technologies used by SKMF are RDF
-\colorbox{yellow}{to form information links}
-and SPARQL
+as a means of opening up the Internet in a machine readable manner that allows simple Web services to locate and correlate information on behalf of users. The Semantic Web provides some technologies with novel characteristics for knowledge management. The two Semantic Web technologies used by SKMF are RDF to form information links and SPARQL
 \cite{sparql}
 to retrieve the information.
 
@@ -25,14 +21,12 @@ to retrieve the information.
 
 Resource Description Framework
 \cite{rdf}
-(RDF) is the language that describes Semantic Web information. The smallest viable unit in RDF is the triple, a statement consisting of the
-\colorbox{yellow}{uniform resource identifier (URI)}
-of some resource, the URI of a specific property of that resource, and either a third URI or a literal value to provide meaning to the property. In RDF statements, these are referred to as the subject, predicate, and object, respectively. A collection of RDF statements provides a description of various resources and their relationships that can be represented as a directed graph, with subjects and objects as the nodes and predicates as the vertices directed from subjects to objects. While it is possible to serialize RDF statements into a form that is more compact than a complete list of triples, the information is typically kept in a triplestore that is further optimized for storage and retrieval of the statements, similar to a relational database system.
+(RDF) is the language that describes Semantic Web information. The smallest viable unit in RDF is the triple, a statement consisting of the uniform resource identifier (URI) of some resource, the URI of a specific property of that resource, and either a third URI or a literal value to provide meaning to the property. In RDF statements, these are referred to as the subject, predicate, and object, respectively. A collection of RDF statements provides a description of various resources and their relationships that can be represented as a directed graph, with subjects and objects as the nodes and predicates as the vertices directed from subjects to objects. While it is possible to serialize RDF statements into a form that is more compact than a complete list of triples, the information is typically kept in a triplestore that is further optimized for storage and retrieval of the statements, similar to a relational database system.
 
 Relational database systems allow developers to define data models that map well to the objects in object-oriented programming. It is straightforward to assign each column from a table to an attribute of one programming object and define some predetermined behaviors to perform on those attributes. Due to its graph-based nature, RDF does not provide such a convenient mapping. In fact, the shape of the information changes as triples are inserted into and deleted from the triplestore. SKMF uses RDF, however, because the nature of information that will be placed in the system cannot be known beforehand. Any attempt by a developer to devise a schema of tables is merely a guess of what will be useful to the customer and in what way it will be useful. While very good guesses are possible, there will always missing attributes that the customer desires and extra attributes that the customer never uses, limiting how customers can represent their data. Despite its limitations, RDF is flexible enough to allow the customer define a personalized schema as information is added and forged into knowledge.
 
 
-\section{\colorbox{yellow}{Motivation for SKMF}}
+\section{Motivation for SKMF}
 \label{intro:motive}
 
 SKMF was originally conceived as a computer security incident response tool that would utilize Semantic Web linked data to build relationships between information assets, services, software, updates, vulnerabilities, patches, policy books, procedures, incident response team members, and other resources to aid incident responders in implementing security plans. Such a system would be able to pull information about vulnerabilities and patches from online sources of publication. It could be populated with asset information with the aid of a configuration management or network scanning tool that can identify networked resources. User information could be pulled from a network directory service or other source of team member information. Later, it was decided that the focus on incident response was not necessary and that a framework that would support quick deployment of such a system would be more useful. Thus, the focus of the project shifted to providing a general knowledge management platform that would allow users to define more specific uses of the application.

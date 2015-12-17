@@ -59,15 +59,9 @@ are written for Python 2.7 and do not support Python 3, the object model for SKM
 \subsection{Modeling Around RDF}
 \label{method:orm}
 
-When data are represented as a directed graph, as with RDF, it is possible for the model of the data to change as data are added and removed. This makes it difficult to maintain a schema and nearly impossible to enforce one. Two approaches are employed by SKMF to address this issue. First, a basic schema is hard-coded into the application to support some common RDF types and some features specific to the application. Second, the application utilizes parsers that allow users
-\colorbox{yellow}{to}
-define and extend virtually any custom schema.
+When data are represented as a directed graph, as with RDF, it is possible for the model of the data to change as data are added and removed. This makes it difficult to maintain a schema and nearly impossible to enforce one. Two approaches are employed by SKMF to address this issue. First, a basic schema is hard-coded into the application to support some common RDF types and some features specific to the application. Second, the application utilizes parsers that allow users to define and extend virtually any custom schema.
 
-A prime example of a hard-coded schema in SKMF is the `User' class. A user is treated like any other RDF resource, except that it is expected to have some known properties set and it may have other optional properties that get special treatment. One property that a user must have in the current version of SKMF is `skmf:hashpass', which is a salted hash of the user's password used for authentication.
-\colorbox{yellow}{Note that in this notation `skmf:'}
-is shorthand for the SKMF namespace, or the full URI where `hashpass' is defined. The only optional property of users that receives special treatment is `foaf:name', which is displayed in some parts of the Web interface. This is also an example of incorporating an external schema
-\colorbox{yellow}{by using}
-the `foaf' namespace
+A prime example of a hard-coded schema in SKMF is the `User' class. A user is treated like any other RDF resource, except that it is expected to have some known properties set and it may have other optional properties that get special treatment. One property that a user must have in the current version of SKMF is `skmf:hashpass', which is a salted hash of the user's password used for authentication. Note that in this notation `skmf:' is shorthand for the SKMF namespace, or the full URI where `hashpass' is defined. The only optional property of users that receives special treatment is `foaf:name', which is displayed in some parts of the Web interface. This is also an example of incorporating an external schema by using the `foaf' namespace
 \cite{foaf}
 instead of defining a custom property in the local namespace.
 
@@ -129,8 +123,7 @@ was selected for SKMF due to multiple factors. First, it is a full-stack Web fra
 \cite{django},
 which is a very popular Web framework for Python. While SKFM is not specifically designed to be RESTful
 \cite{restful},
-\colorbox{yellow}{it could be made to support a RESTful API at a later time.}
-Third, Flask is available through a BSD license, making it more viable than a GPL-licensed framework for a project that may not be released under the same terms. Finally, Flask is extensively documented, even though some of the sanctioned modules are not.
+it could be made to support a RESTful API at a later time. Third, Flask is available through a BSD license, making it more viable than a GPL-licensed framework for a project that may not be released under the same terms. Finally, Flask is extensively documented, even though some of the sanctioned modules are not.
 
 The Web framework is relied upon to provide many of the security features desired of SKMF. Flask-WTF
 \cite{flask-wtf}
@@ -144,7 +137,7 @@ manages user sessions and authorization tokens, as well as providing a mechanism
 \section{Security Development Lifecycle in Agile}
 \label{method:sdl}
 
-\colorbox{yellow}{Microsoft's SDL}
+Microsoft's SDL
 \cite{secdevlifecycle}
 prescribes an approach to software development that aids developers in identifying security and quality concerns throughout the development process. It is aimed primarily at larger development processes, but it includes recommendations for applying its key principles to an Agile development process. TDD was chosen as the Agile development approach for SKMF since the development team consisted of only a single member and since testability is one of the quality goals of SKMF. Unfortunately, it proved difficult to maintain TDD while working with Flask, so that approach primarily drove backend development.
 
@@ -166,26 +159,15 @@ revealed that SKMF would have two main vectors of attack, under a certain set of
 \label{threat-model}
 \end{figure}
 
-Data from the Web server are considered untrusted because many of them are user supplied. The main threats identified by the model here are cross-site scripting (XSS), cross-site request forgery (CSRF), and information disclosure.
-\colorbox{yellow}{An issue that was not identified by the}
-modeling tool is injection. The first two issues are handled with Flask-WTF by always escaping text from form fields and by implementing synchronizer tokens. The third issue largely depends on secure deployment, with a secure connection between SKMF and the Web server and the use of TLS beyond that.
-\colorbox{yellow}{The fourth issue requires that all input}
-be handled safely and not passed directly to string parsers or SPARQL queries.
+Data from the Web server are considered untrusted because many of them are user supplied. The main threats identified by the model here are cross-site scripting (XSS), cross-site request forgery (CSRF), and information disclosure. An issue that was not identified by the modeling tool is injection. The first two issues are handled with Flask-WTF by always escaping text from form fields and by implementing synchronizer tokens. The third issue largely depends on secure deployment, with a secure connection between SKMF and the Web server and the use of TLS beyond that. The fourth issue requires that all input be handled safely and not passed directly to string parsers or SPARQL queries.
 
-Steps taken within SKMF to mitigate information disclosure include handling user authentication with Flask-Login and providing the ability to scope queries and updates to specific named graphs. With a proper UI update, the use of these named graphs could allow an administrator to create a graph-based access control list for users, which could, itself, be stored in a restricted graph. Another measure to prevent information disclosure is the use of Flask-Bcrypt to provide a secure means of storing authentication tokens.
-\colorbox{yellow}{Bcrypt mitigates brute-force attacks against}
-password hashes by applying a salt to randomize the value that actually gets hashed and by using a hashing algorithm that is resource-intensive, making it very difficult to reverse. \colorbox{yellow}{Use of a random salt also greatly reduces the}
-likelihood that the hash of the password can be located within a rainbow table. Bcrypt does, however pose two problems for SKMF, since the hashing operations are performed on the server. The first problem is that the user's password is sent in clear text to the server. Even if it is encrypted through TLS, the clear text password is exposed for a brief time on the server and could be intercepted. The second problem is that the
-\colorbox{yellow}{intensive nature of the hashing}
-operation opens the server up to denial-of-service attacks should enough simultaneous logins be attempted. One possible solution to both problems is to offload the hashing operation onto the user's system, but that does not seem to be directly supported by Flask or any of the extensions currently used by SKMF.
+Steps taken within SKMF to mitigate information disclosure include handling user authentication with Flask-Login and providing the ability to scope queries and updates to specific named graphs. With a proper UI update, the use of these named graphs could allow an administrator to create a graph-based access control list for users, which could, itself, be stored in a restricted graph. Another measure to prevent information disclosure is the use of Flask-Bcrypt to provide a secure means of storing authentication tokens. Bcrypt mitigates brute-force attacks against password hashes by applying a salt to randomize the value that actually gets hashed and by using a hashing algorithm that is resource-intensive, making it very difficult to reverse. Use of a random salt also greatly reduces the likelihood that the hash of the password can be located within a rainbow table. Bcrypt does, however pose two problems for SKMF, since the hashing operations are performed on the server. The first problem is that the user's password is sent in clear text to the server. Even if it is encrypted through TLS, the clear text password is exposed for a brief time on the server and could be intercepted. The second problem is that the intensive nature of the hashing operation opens the server up to denial-of-service attacks should enough simultaneous logins be attempted. One possible solution to both problems is to offload the hashing operation onto the user's system, but that does not seem to be directly supported by Flask or any of the extensions currently used by SKMF.
 
-\colorbox{yellow}{Injection attacks can come in two forms.}
-The first is format string injection, which occurs when a string formatting operation is performed directly on a user-supplied string that is assumed not to contain any string formatter tokens. The second is SPARQL injection, which occurs when a user-supplied string containing valid SPARQL escape sequences and syntax is sent to the SPARQL endpoint without being properly sanitized. Either injection attack could result in information disclosure or data corruption. To prevent format string injection, SKMF only applies the Python string format operation on static strings, like the template shown in Figure
+Injection attacks can come in two forms. The first is format string injection, which occurs when a string formatting operation is performed directly on a user-supplied string that is assumed not to contain any string formatter tokens. The second is SPARQL injection, which occurs when a user-supplied string containing valid SPARQL escape sequences and syntax is sent to the SPARQL endpoint without being properly sanitized. Either injection attack could result in information disclosure or data corruption. To prevent format string injection, SKMF only applies the Python string format operation on static strings, like the template shown in Figure
 \ref{sparql-template}.
 In that template, the `body' and `optional' fields are both replaced by strings that may contain user input. That operation is performed by passing the replacement strings as arguments to the format() function, applied to the static template string. The replacement strings are constructed in a similar manner, with user input supplied as arguments to the format() function applied to some static string. Essentially, complex strings are constructed from the inside out and the format operation is only used on the outermost string at each layer, ensuring that it is never applied to a string that has been tainted by untrusted input.
 
-\colorbox{yellow}{SPARQL injection is more difficult to prevent.}
-SPARQL does not offer prepared statements or parameterized queries, as do many SQL implementations, so input must be sanitized. Input sanitizing in SKMF is performed primarily by Flask-WTF, so HTML characters such as `\textless' and `\textgreater' should be escaped, making it difficult to construct a valid query injection. Since Flask-WTF handles any POST request, whether or not it was actually submitted through a Flask-WTF form, it should be difficult for an attacker to bypass the filters by crafting a special POST request. Also, SPARQLWrapper
+SPARQL injection is more difficult to prevent. SPARQL does not offer prepared statements or parameterized queries, as do many SQL implementations, so input must be sanitized. Input sanitizing in SKMF is performed primarily by Flask-WTF, so HTML characters such as `\textless' and `\textgreater' should be escaped, making it difficult to construct a valid query injection. Since Flask-WTF handles any POST request, whether or not it was actually submitted through a Flask-WTF form, it should be difficult for an attacker to bypass the filters by crafting a special POST request. Also, SPARQLWrapper
 \cite{sparqlwrapper},
 which handles communication with the SPARQL endpoint, has strict requirements for how queries should be formed. SKMF forms queries as multi-line strings which means that any attempt to comment out the rest of a line during injection would most likely result in a query that SPARQLWrapper will reject. While these measures help to mitigate SPARQL injection attacks, further measures will need to be taken to properly safeguard SKMF. Ideally, a whitelisting approach will be taken when handling user input to ensure that any user-supplied field aligns with the SPARQL definition for a single variable, URI, or prefixed URI. This would ensure that only viable input could reach the SPARQL endpoint and it would provide an opportunity to alert users who have mistakenly provided invalid input.
 
