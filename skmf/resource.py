@@ -52,7 +52,7 @@ class Query(object):
                         {'type': 'uri'|'pfx'|'label',
                          'value':
                             [{'type': 'uri'|'pfx'|'label'|'literal',
-                              'value': <ojbect_uri>|<object_label>|<literal>,
+                              'value': <object_uri>|<object_label>|<literal>,
                               'xml:lang': <lang_string>,
                               'datatype': <xml_datatype>
                             }]
