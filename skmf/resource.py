@@ -62,6 +62,11 @@ class Query(object):
             }
     """
 
+    # Having a mutable with a default assignment causes causes that object to
+    # be shared between invocations. Instead, the default should be 'None' and
+    # the desired default should be assigned if the object remains 'None' after
+    # invocation. For instance, (graphlist = None)
+    # if not graphlist: graphlist = {''}
     def __init__(self, graphlist = {''}, labellist = set(),
                  subjectlist = {}, optlist = []):
         """Setup the local lists and dictionary to hold the query elements.
@@ -106,6 +111,11 @@ class Query(object):
             dict of predicates and RDF objects that were successfully added.
         """
         new_preds = {}
+        # When looping through dictionaries, the key and corresponding value
+        # can be retrieved at the same time using the items() method.
+        # When looping through a sequence, the position index and corresponding
+        # value can be retrieved at the same time using the enumerate()
+        # function.
         for pred in predlist:
             if predlist[pred]['value'] and predlist[pred]['type']:
                 new_type = predlist[pred]['type']
